@@ -45,7 +45,7 @@ export default function Navbar() {
                        text-[13px] font-medium cursor-pointer hover:bg-forest-dark
                        transition-colors"
 
-                       href={"/signup"}
+                       href={"/login"}
           >
             Instructor login
           </Link>

@@ -1,20 +1,16 @@
 import {
-  AuthResponse,
   LoginPayload,
+  LoginResponse,
   MeResponse,
   RegisterPayload,
   RegisterResponse,
 } from "@/types/auth-types";
 import axios from "@/axios/instance";
 
-export const getMe = async () => {
-  const token = localStorage.getItem("accessToken");
-  const response = await axios.get<MeResponse>(`/users/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
+export const getMe = async (): Promise<MeResponse> => {
+  const response = await fetch(`/api/user/me`)
+  if (!response.ok) throw new Error('Failed to fetch user')
+  return response.json()
 };
 
 export const changePasswordService = async (
@@ -33,8 +29,8 @@ export const changePasswordService = async (
 
 export const loginService = async (
   payload: LoginPayload,
-): Promise<AuthResponse> => {
-  const response = await axios.post<AuthResponse>(`/auth/login`, payload);
+): Promise<LoginResponse> => {
+  const response = await axios.post<LoginResponse>(`/auth/login`, payload);
   return response.data;
 };
 

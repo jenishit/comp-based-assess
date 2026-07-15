@@ -17,7 +17,7 @@ import {
   Key,
   ClipboardList,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const teacherNav = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -45,8 +45,8 @@ export default function DashboardLayout({
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const role = session?.userType || user?.role || "STUDENT";
-  const isTeacher = role === "TEACHER" || role === "teacher" || role === "instructor";
+  const userType = session?.role || user?.role || "STUDENT";
+  const isTeacher = userType === "proctor" || userType === "ADMIN" || userType === "TEACHER";
   const navItems = isTeacher ? teacherNav : studentNav;
 
   return (
@@ -130,12 +130,12 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-espresso leading-tight">
-                  {user.full_name}
+                  {user.name}
                 </p>
                 <p className="text-xs text-bark">{user.email}</p>
               </div>
               <div className="w-9 h-9 rounded-full bg-forest flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                {user.full_name
+                {user.name
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("")

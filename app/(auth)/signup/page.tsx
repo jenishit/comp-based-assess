@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { registerService } from "@/services/auth-service";
 import { RegisterPayload } from "@/types/auth-types";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -32,12 +33,11 @@ export default function SignupPage() {
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
+      full_name: "",
       email: "",
       password: "",
       confirm_password: "",
-      role: "",
+      user_type: "",
     },
   });
 
@@ -56,17 +56,29 @@ export default function SignupPage() {
     setLoading(true);
 
     const payload: RegisterPayload = {
-      name: data.first_name + " " + data.last_name,
+      name: data.full_name,
       email: data.email,
       password: data.password,
-      role: data.role,
+      role: data.user_type,
     };
 
     try {
       await registerService(payload);
-      toast.success(
-        "Registered successfully. You will be redirected to login page",
-      );
+
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.success("Registered successfully. Please log in.");
+        router.push("/login");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Registered and logged in successfully.");
       router.push("/dashboard");
       setLoading(false);
     } catch (err) {
@@ -107,7 +119,7 @@ export default function SignupPage() {
               aria-label="Close"
               className="bg-transparent border-0 cursor-pointer text-sand flex p-0.5
                          hover:text-bark transition-colors"
-              href={"/"}
+              href={"/login"}
             >
               <ArrowLeft size={18} />
             </Link>
@@ -129,36 +141,16 @@ export default function SignupPage() {
             className="flex flex-col gap-3"
           >
             <Controller
-              name="first_name"
+              name="full_name"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field>
                   <Label className="block text-xs font-medium text-bark mb-1">
-                    First Name
+                    Full Name
                   </Label>
                   <Input
                     type="text"
-                    placeholder="Eg: John"
-                    {...field}
-                    className={inputCls}
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-            <Controller
-              name="last_name"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field>
-                  <Label className="block text-xs font-medium text-bark mb-1">
-                    Last Name
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder="Eg: Doe"
+                    placeholder="Eg: John Doe"
                     {...field}
                     className={inputCls}
                   />
@@ -229,7 +221,7 @@ export default function SignupPage() {
               )}
             />
             <Controller
-              name="role"
+              name="user_type"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field>
@@ -247,7 +239,7 @@ export default function SignupPage() {
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TEACHER">Teacher</SelectItem>
+                      <SelectItem value="TEACHER">Proctor</SelectItem>
                       <SelectItem value="STUDENT">Student</SelectItem>
                     </SelectContent>
                   </Select>

@@ -34,11 +34,11 @@ export default function AuthProvider({children}:AuthProviderProps) {
     const fetchUser = async () => {
       setLoading(true);
       try {
-        const response = await getMe();
+        const user = await getMe();
 
         if (cancelled) return;
-        if (response.success) {
-          setUser(response.data);
+        if (user?.id) {
+          setUser(user);
         } else {
           clear();
         }

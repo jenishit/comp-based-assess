@@ -2,15 +2,15 @@
 
 import { useUserStore } from "@/stores/userStore";
 import { useSession } from "next-auth/react";
-import { FileText, Users, Clock, Activity, Key, Upload, ClipboardList, PlusCircle, ExternalLink, Settings } from "lucide-react";
+import { FileText, Users, Clock, Activity, Key, Upload, ClipboardList, PlusCircle, Settings } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const { user, loading } = useUserStore();
   const { data: session } = useSession();
 
-  const role = session?.userType || user?.role || "STUDENT";
-  const isTeacher = role === "TEACHER" || role === "teacher" || role === "instructor";
+  const userType = session?.role || user?.role || "STUDENT";
+  const isTeacher = userType === "proctor" || userType === "ADMIN" || userType === "TEACHER";
 
   if (isTeacher) {
     const stats = [
@@ -24,7 +24,7 @@ export default function DashboardPage() {
       <div className="max-w-5xl">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-espresso tracking-tight">
-            {loading ? "Welcome back" : `Welcome back${user?.full_name ? `, ${user?.full_name?.split(" ")[0]}` : ""}`}
+            {loading ? "Welcome back" : `Welcome back${user?.name ? `, ${user?.name?.split(" ")[0]}` : ""}`}
           </h1>
           <p className="text-bark text-sm mt-1">Manage your exams and monitor student progress.</p>
         </div>
@@ -73,7 +73,7 @@ export default function DashboardPage() {
     <div className="max-w-5xl">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-espresso tracking-tight">
-          {loading ? "Welcome back" : `Welcome back${user?.full_name ? `, ${user?.full_name?.split(" ")[0]}` : ""}`}
+          {loading ? "Welcome back" : `Welcome back${user?.name ? `, ${user?.name?.split(" ")[0]}` : ""}`}
         </h1>
         <p className="text-bark text-sm mt-1">Track your assessments and upload course materials.</p>
       </div>
@@ -114,4 +114,3 @@ export default function DashboardPage() {
 function SettingsIcon({ size, className }: { size: number; className?: string }) {
   return <Settings size={size} className={className} />;
 }
-import { Settings } from "lucide-react";

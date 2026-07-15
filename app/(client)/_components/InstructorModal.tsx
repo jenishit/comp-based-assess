@@ -29,7 +29,7 @@ export default function InstructorModal({ onClose }: Props) {
         const res = await fetch("/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role: "instructor" }),
+          body: JSON.stringify({ full_name: name, email, password, user_type: "proctor" }),
         });
         if (!res.ok) {
           const data = await res.json();

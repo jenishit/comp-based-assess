@@ -4,9 +4,9 @@ const backendBaseUrl =
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, role } = body
+    const { full_name, email, password, user_type } = body
 
-    if (!email || !password || !name) {
+    if (!email || !password || !full_name) {
       return Response.json(
         { error: 'Name, email, and password are required.' },
         { status: 400 },
@@ -17,10 +17,10 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        full_name: name,
+        full_name,
         email,
         password,
-        user_type: role ?? 'instructor',
+        user_type: user_type ?? 'student',
       }),
     })
 

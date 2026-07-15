@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await getMe();
       if (response.success) {
-        set({ me: response.data as AuthUser, isAuthenticated: true });
+        set({ me: response.data, isAuthenticated: true });
       } else {
         get().clearUserDetails();
         set({ error: response.message || "Failed to fetch user details" });

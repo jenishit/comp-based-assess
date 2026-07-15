@@ -28,10 +28,9 @@ export const changePassword = z
   });
 
 export const signUpSchema = z.object({
-  first_name: z
+  full_name: z
     .string()
-    .min(2, "First Name must be at least 2 characters long"),
-  last_name: z.string().min(2, "Last Name must be at least 2 characters long"),
+    .min(2, "Full name must be at least 2 characters long"),
   email: z
     .string()
     .min(1, "Email is required")
@@ -46,5 +45,5 @@ export const signUpSchema = z.object({
         "Password needs to have at least one uppercase, one lowercasem one number and one special character",
     }),
   confirm_password: z.string(),
-  role: z.string().min(2, "Select a role")
+  user_type: z.string().min(2, "Select a role")
 });

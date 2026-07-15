@@ -60,7 +60,7 @@ axiosInstance.interceptors.response.use(
       refreshAuthToken()
 
       await signOut({
-        callbackUrl: '/signin',
+        callbackUrl: '/login',
       })
     }
 
