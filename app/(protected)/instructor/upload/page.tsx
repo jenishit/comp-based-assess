@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Upload, FileText, Check, Loader2, X } from "lucide-react";
 import { fileService } from "@/services/exam-service";
+import type { UploadFileResponse } from "@/types/exam";
 import { toast } from "sonner";
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploaded, setUploaded] = useState<{ file_id: string; filename: string; url: string } | null>(null);
+  const [uploaded, setUploaded] = useState<UploadFileResponse | null>(null);
 
   const handleUpload = async (f: File) => {
     if (!f.type.includes("pdf")) {
@@ -19,11 +20,11 @@ export default function UploadPage() {
     setUploading(true);
     try {
       const res = await fileService.upload(f);
-      if (res.success) {
-        setUploaded(res.data);
+      if (res.file_path) {
+        setUploaded(res);
         toast.success("File uploaded successfully");
       } else {
-        toast.error(res.message || "Upload failed");
+        toast.error("Upload failed");
       }
     } catch {
       toast.error("Failed to upload file");

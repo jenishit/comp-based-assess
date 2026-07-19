@@ -2,9 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Upload, ArrowRight, Loader2, Check, X } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { newExamSchema } from "@/schemas/new-exam-schema";
+import { Field, FieldError } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import { FileText, Upload, ArrowRight, Loader2, Check } from "lucide-react";
 import { examService, fileService, questionService } from "@/services/exam-service";
 import { toast } from "sonner";
+
+type ExamFormValues = {
+  title: string;
+  subject: string;
+  description?: string;
+  timer_minutes: number;
+  mcq_count: number;
+};
+
+const inputCls = "w-full px-3 py-2.5 rounded-lg border border-sand-border bg-cream text-sm text-espresso outline-none focus:border-forest transition-colors";
 
 export default function CreateExamPage() {
   const router = useRouter();
@@ -12,12 +27,18 @@ export default function CreateExamPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [fileId, setFileId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState(60);
-  const [questionCount, setQuestionCount] = useState(10);
   const [creating, setCreating] = useState(false);
+
+  const form = useForm<ExamFormValues>({
+    resolver: zodResolver(newExamSchema) as any,
+    defaultValues: {
+      title: "",
+      subject: "",
+      description: "",
+      timer_minutes: 60,
+      mcq_count: 10,
+    },
+  });
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -29,40 +50,38 @@ export default function CreateExamPage() {
     setUploading(true);
     try {
       const res = await fileService.upload(f);
-      if (res.success) {
-        setFileId(res.data.file_id);
+      if (res.file_path) {
+        setFileId(res.saved_filename.replace('.pdf', ''));
         setStep("details");
         toast.success("PDF uploaded successfully");
       } else {
-        toast.error(res.message || "Upload failed");
+        toast.error("Upload failed");
       }
-    } catch {
+    } catch (err) {
+      console.error("Upload error:", err);
       toast.error("Failed to upload file");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleCreate = async () => {
-    if (!title || !subject) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
+  const onSubmit = async (data: ExamFormValues) => {
     setCreating(true);
     setStep("generating");
     try {
       const exam = await examService.create({
-        title,
-        subject,
-        description,
-        duration_minutes: duration,
+        title: data.title,
+        subject: data.subject,
+        description: data.description,
+        timer_minutes: data.timer_minutes,
         file_id: fileId || undefined,
+        mcq_count: String(data.mcq_count),
       });
 
       if (fileId) {
         await questionService.generate({
           file_id: fileId,
-          count: questionCount,
+          count: data.mcq_count,
           types: ["mcq", "short_answer"],
         }).catch(() => {});
       }
@@ -77,8 +96,6 @@ export default function CreateExamPage() {
       setCreating(false);
     }
   };
-
-  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-sand-border bg-cream text-sm text-espresso outline-none focus:border-forest transition-colors";
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -109,7 +126,7 @@ export default function CreateExamPage() {
         )}
 
         {step === "details" && (
-          <div className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {file && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-forest/5 border border-forest/20">
                 <FileText size={18} className="text-forest shrink-0" />
@@ -121,42 +138,77 @@ export default function CreateExamPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-bark mb-1">Exam Title *</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Midterm Exam" className={inputCls} />
-            </div>
+            <Controller
+              name="title"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <Label className="block text-xs font-medium text-bark mb-1">Exam Title *</Label>
+                  <input placeholder="e.g. Midterm Exam" className={inputCls} {...field} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-bark mb-1">Subject *</label>
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Computer Science" className={inputCls} />
-            </div>
+            <Controller
+              name="subject"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <Label className="block text-xs font-medium text-bark mb-1">Subject *</Label>
+                  <input placeholder="e.g. Computer Science" className={inputCls} {...field} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-bark mb-1">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Optional description..." className={inputCls + " resize-none"} />
-            </div>
+            <Controller
+              name="description"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <Label className="block text-xs font-medium text-bark mb-1">Description</Label>
+                  <textarea rows={3} placeholder="Optional description..." className={inputCls + " resize-none"} {...field} />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-bark mb-1">Duration (minutes) *</label>
-                <input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={5} max={480} className={inputCls} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-bark mb-1">Questions to generate</label>
-                <input type="number" value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} min={1} max={50} className={inputCls} />
-              </div>
+              <Controller
+                name="timer_minutes"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <Label className="block text-xs font-medium text-bark mb-1">Duration (minutes) *</Label>
+                    <input type="number" min={5} max={480} className={inputCls} {...field} />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="mcq_count"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <Label className="block text-xs font-medium text-bark mb-1">Questions to generate</Label>
+                    <input type="number" min={1} max={50} className={inputCls} {...field} />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep("upload")} className="px-4 py-2.5 rounded-xl border border-sand-border text-sm font-medium text-bark hover:bg-sand-light transition-colors cursor-pointer bg-transparent">
+              <button type="button" onClick={() => setStep("upload")} className="px-4 py-2.5 rounded-xl border border-sand-border text-sm font-medium text-bark hover:bg-sand-light transition-colors cursor-pointer bg-transparent">
                 Back
               </button>
-              <button onClick={handleCreate} disabled={creating} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors disabled:opacity-50 cursor-pointer border-0">
+              <button type="submit" disabled={creating} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors disabled:opacity-50 cursor-pointer border-0">
                 {creating ? "Creating..." : "Create Exam"}
                 <ArrowRight size={16} />
               </button>
             </div>
-          </div>
+          </form>
         )}
 
         {step === "generating" && (

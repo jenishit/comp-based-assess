@@ -109,10 +109,11 @@ export interface ProctoringEventSummary {
 
 export interface CreateExamPayload {
   title: string;
-  subject: string;
+  subject?: string;
   description?: string;
-  duration_minutes: number;
+  timer_minutes: number;
   file_id?: string;
+  mcq_count: string
 }
 
 export interface JoinExamPayload {
@@ -163,13 +164,10 @@ export interface AttemptSummary {
 }
 
 export interface UploadFileResponse {
-  success: boolean;
-  message: string;
-  data: {
-    file_id: string;
+    file_path: string;
     filename: string;
-    url: string;
-  };
+    saved_filename: string;
+    size_bytes: number;
 }
 
 export interface QuestionJob {

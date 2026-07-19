@@ -57,9 +57,7 @@ export const fileService = {
   upload: async (file: File): Promise<UploadFileResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await axiosInstance.post('/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const res = await axiosInstance.post('/files/upload', formData);
     return res.data;
   },
 };

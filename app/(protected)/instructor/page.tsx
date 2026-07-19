@@ -44,15 +44,15 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-sand-border p-5">
           <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Link href="/dashboard/exams/new" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+            <Link href="/instructor/exams/new" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
               <PlusCircle size={16} className="inline mr-2 mb-0.5" />
               Create a new exam
             </Link>
-            <Link href="/dashboard/exams" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+            <Link href="/instructor/exams" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
               <FileText size={16} className="inline mr-2 mb-0.5" />
               View existing exams
             </Link>
-            <Link href="/dashboard/settings" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+            <Link href="/instructor/settings" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
               <SettingsIcon size={16} className="inline mr-2 mb-0.5" />
               Account settings
             </Link>
@@ -93,15 +93,15 @@ export default function DashboardPage() {
       <div className="bg-white rounded-xl border border-sand-border p-5">
         <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Link href="/dashboard/join" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+          <Link href="/instructor/join" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
             <Key size={16} className="inline mr-2 mb-0.5" />
             Join an exam
           </Link>
-          <Link href="/dashboard/upload" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+          <Link href="/instructor/upload" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
             <Upload size={16} className="inline mr-2 mb-0.5" />
             Upload study material
           </Link>
-          <Link href="/dashboard/attempts" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+          <Link href="/instructor/attempts" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
             <ClipboardList size={16} className="inline mr-2 mb-0.5" />
             View my attempts
           </Link>
