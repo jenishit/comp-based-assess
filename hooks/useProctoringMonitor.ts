@@ -1,19 +1,16 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+import type { FaceLandmarkerResult, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import type { ProctoringEvent, ProctoringEventType, ProctoringState } from "@/types/exam";
-import type {
-  FaceMeshInstance,
-  FaceMeshResults,
-  NormalizedLandmark,
-} from "@/types/mediapipe";
 
 // ── Narrow union types ────────────────────────────────────────────────
 type GazeDirection = ProctoringState["gazeDirection"];
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-// With refineLandmarks=true MediaPipe emits 478 landmarks (0–477).
-// Indices for the iris + eye-corner landmarks we use:
+// The face_landmarker model bundle emits 478 landmarks (0–477), same layout
+// FaceMesh's refineLandmarks=true produced — indices below are unchanged.
 const IDX = {
   R_IRIS:    468, // right iris centre
   L_IRIS:    473, // left iris centre
@@ -25,8 +22,11 @@ const IDX = {
   R_BOTTOM:  145, // right lower eyelid mid
 } as const;
 
-const FACE_MESH_CDN =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js";
+// The JS API ships via npm; the WASM binary + model asset are still fetched
+// from a CDN at runtime (not bundled) — this is normal for tasks-vision.
+const WASM_BASE_PATH = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+const MODEL_ASSET_PATH =
+  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 const INITIAL_STATE: ProctoringState = {
   cameraReady:      false,
@@ -44,7 +44,7 @@ const INITIAL_STATE: ProctoringState = {
 
 // ── Options ───────────────────────────────────────────────────────────
 interface UseProctoringOptions {
-  examId:   string;
+  attemptId: string;
   enabled?: boolean;
   onEvent?: (event: ProctoringEvent) => void;
 }
@@ -54,15 +54,14 @@ export function useProctoringMonitor(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   options:  UseProctoringOptions,
 ): ProctoringState {
-  const { examId, enabled = true, onEvent } = options;
+  const { attemptId, enabled = true, onEvent } = options;
 
   const [state, setState] = useState<ProctoringState>(INITIAL_STATE);
 
   // ── Infrastructure refs ────────────────────────────────────────────
-  const faceMeshRef     = useRef<FaceMeshInstance | null>(null);
-  const streamRef       = useRef<MediaStream | null>(null);
-  const rafRef          = useRef<number>(0);
-  const isProcessingRef = useRef<boolean>(false); // prevent send() queue overflow
+  const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const streamRef         = useRef<MediaStream | null>(null);
+  const rafRef            = useRef<number>(0);
 
   // ── Event-throttle map ─────────────────────────────────────────────
   const lastFiredRef = useRef<Partial<Record<ProctoringEventType, number>>>({});
@@ -102,13 +101,13 @@ export function useProctoringMonitor(
     (event: Omit<ProctoringEvent, "timestamp">): void => {
       const full: ProctoringEvent = { ...event, timestamp: Date.now() };
       onEvent?.(full);
-      fetch("/api/exam/proctor-event", {
+      fetch(`/api/v1/attempts/${attemptId}/proctoring-events`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ examId, ...full }),
+        body:    JSON.stringify(full),
       }).catch(() => { /* fire-and-forget — never block the exam */ });
     },
-    [examId, onEvent],
+    [attemptId, onEvent],
   );
 
   // ── Gaze estimation from iris landmarks ───────────────────────────
@@ -118,8 +117,8 @@ export function useProctoringMonitor(
   // vRatio: 0 → iris at top of eye; 1 → iris at bottom
   //          expected centre ≈ 0.50
   const estimateGaze = useCallback(
-    (landmarks: NormalizedLandmark[]): { direction: GazeDirection; away: boolean } => {
-      const fallback = { direction: "center" as GazeDirection, away: false };
+    (landmarks: NormalizedLandmark[]): { direction: GazeDirection; away: boolean; yaw: number; pitch: number } => {
+      const fallback = { direction: "center" as GazeDirection, away: false, yaw: 0.5, pitch: 0.5 };
 
       // Need all 478 iris landmarks
       if (landmarks.length < 478) return fallback;
@@ -148,17 +147,15 @@ export function useProctoringMonitor(
       else if (vRatio < 0.25) direction = "up";
       else if (vRatio > 0.80) direction = "down";
 
-      return { direction, away: direction !== "center" };
+      return { direction, away: direction !== "center", yaw: hRatio, pitch: vRatio };
     },
     [],
   );
 
-  // ── MediaPipe results handler ─────────────────────────────────────
-  const onResults = useCallback(
-    (results: FaceMeshResults): void => {
-      isProcessingRef.current = false;
-
-      const faces = results.multiFaceLandmarks;
+  // ── FaceLandmarker results handler ────────────────────────────────
+  const processResults = useCallback(
+    (results: FaceLandmarkerResult): void => {
+      const faces = results.faceLandmarks;
       const count = faces.length;
       const now   = Date.now();
 
@@ -188,8 +185,14 @@ export function useProctoringMonitor(
 
       // ── gaze ───────────────────────────────────────────────────────
       if (count > 0) {
-        const { direction, away } = estimateGaze(faces[0]);
+        const { direction, away, yaw, pitch } = estimateGaze(faces[0]);
         patchState({ gazeDirection: direction, gazeAway: away });
+
+        // Continuous, unconditional sample for the gazeplot's timeline —
+        // independent of the away/violation thresholds below.
+        if (canFire("gaze_sample", 2_000)) {
+          reportEvent({ type: "gaze_sample", metadata: { direction, yaw, pitch } });
+        }
 
         if (away) {
           if (gazeAwaySinceRef.current === null) {
@@ -200,12 +203,12 @@ export function useProctoringMonitor(
             reportEvent({
               type:     "gaze_away",
               duration: awayMs,
-              metadata: { direction, secondsAway: Math.round(awayMs / 1_000) },
+              metadata: { direction, secondsAway: Math.round(awayMs / 1_000), yaw, pitch },
             });
           }
         } else {
           if (gazeAwaySinceRef.current !== null) {
-            reportEvent({ type: "gaze_returned" });
+            reportEvent({ type: "gaze_returned", metadata: { yaw, pitch } });
           }
           gazeAwaySinceRef.current = null;
         }
@@ -214,46 +217,38 @@ export function useProctoringMonitor(
     [patchState, canFire, reportEvent, estimateGaze],
   );
 
-  // ── Build FaceMesh instance ────────────────────────────────────────
-  const initFaceMesh = useCallback((): void => {
-    if (!window.FaceMesh) return;
-    const fm = new window.FaceMesh({
-      locateFile: (file: string) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
+  // ── Build the FaceLandmarker instance ─────────────────────────────
+  const initFaceLandmarker = useCallback(async (): Promise<void> => {
+    const vision = await FilesetResolver.forVisionTasks(WASM_BASE_PATH);
+    faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate: "GPU" },
+      runningMode: "VIDEO",
+      numFaces: 3,
+      minFaceDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
     });
-    fm.setOptions({
-      maxNumFaces:            3,
-      refineLandmarks:        true,  // required for iris landmarks
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence:  0.5,
-    });
-    fm.onResults(onResults);
-    faceMeshRef.current = fm;
-  }, [onResults]);
+  }, []);
 
   // ── Per-frame processing loop ─────────────────────────────────────
-  // Sends a video frame to FaceMesh only when the previous call has
-  // finished (isProcessingRef guard), preventing queue build-up.
+  // detectForVideo is synchronous — no async queue-overflow guard needed
+  // (unlike the old FaceMesh .send()/onResults callback API).
   const processFrame = useCallback((): void => {
     const video = videoRef.current;
-    const fm    = faceMeshRef.current;
+    const landmarker = faceLandmarkerRef.current;
 
     if (
-      !isProcessingRef.current &&
-      video  !== null &&
-      fm     !== null &&
+      video !== null &&
+      landmarker !== null &&
       video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
       !video.paused &&
       !video.ended
     ) {
-      isProcessingRef.current = true;
-      fm.send({ image: video }).catch(() => {
-        isProcessingRef.current = false; // reset on error so loop continues
-      });
+      const results = landmarker.detectForVideo(video, performance.now());
+      processResults(results);
     }
 
     rafRef.current = requestAnimationFrame(processFrame);
-  }, [videoRef]);
+  }, [videoRef, processResults]);
 
   // ── Camera ────────────────────────────────────────────────────────
   const startCamera = useCallback(async (): Promise<void> => {
@@ -344,33 +339,29 @@ export function useProctoringMonitor(
     };
   }, [enabled, patchState, reportEvent, canFire]);
 
-  // ── Main init: load MediaPipe CDN script + start camera ───────────
+  // ── Main init: load the FaceLandmarker model + start camera ───────
   useEffect(() => {
     if (!enabled) return;
+    let cancelled = false;
 
-    const boot = async (): Promise<void> => {
-      await startCamera();
-      rafRef.current = requestAnimationFrame(processFrame);
-    };
-
-    if (window.FaceMesh) {
-      initFaceMesh();
-      boot();
-    } else {
-      const script         = document.createElement("script");
-      script.src           = FACE_MESH_CDN;
-      script.crossOrigin   = "anonymous";
-      script.onload        = () => { initFaceMesh(); boot(); };
-      script.onerror       = () => patchState({ error: "Failed to load face detection" });
-      document.head.appendChild(script);
-    }
+    (async () => {
+      try {
+        await initFaceLandmarker();
+        if (cancelled) return;
+        await startCamera();
+        if (cancelled) return;
+        rafRef.current = requestAnimationFrame(processFrame);
+      } catch {
+        if (!cancelled) patchState({ error: "Failed to load face detection" });
+      }
+    })();
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach(t => t.stop());
-      faceMeshRef.current?.close();
-      faceMeshRef.current    = null;
-      isProcessingRef.current = false;
+      faceLandmarkerRef.current?.close();
+      faceLandmarkerRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]); // intentionally narrow — inner functions are stable via useCallback

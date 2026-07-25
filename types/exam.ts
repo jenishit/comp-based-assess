@@ -28,7 +28,12 @@ export type ProctoringEventType =
   | "tab_switch"
   | "window_blur"
   | "typing_stopped"
-  | "typing_resumed";
+  | "typing_resumed"
+  | "fullscreen_exit"
+  | "pointer_lock_exit"
+  | "session_terminated"
+  | "keystroke_batch"
+  | "gaze_sample";
 
 export interface ProctoringEvent {
   type: ProctoringEventType;
@@ -175,4 +180,38 @@ export interface QuestionJob {
   status: "pending" | "processing" | "completed" | "failed";
   questions: Question[];
   error?: string;
+}
+
+export interface AnswerDetail {
+  question_id: string;
+  question_text: string;
+  question_type: string;
+  value: string;
+  marks: number;
+  time_spent_seconds: number;
+  flagged: boolean;
+  options?: string[];
+  correctIndex?: number;
+  correctAnswer?: string;
+}
+
+export interface ProctoringEventDetail {
+  type: ProctoringEventType;
+  count: number;
+  severity: "low" | "medium" | "high";
+  timestamps: number[];
+}
+
+export interface AttemptDetail {
+  attempt: AttemptSummary;
+  answers: AnswerDetail[];
+  proctoring_events: ProctoringEventDetail[];
+}
+
+export interface GazeSample {
+  timestamp: number;
+  yaw?: number;
+  pitch?: number;
+  direction?: string;
+  duration?: number;
 }

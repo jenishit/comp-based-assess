@@ -3,8 +3,15 @@ import type {
   ExamSummary, ExamDetail, CreateExamPayload,
   JoinExamPayload, JoinExamResponse, QuestionJob,
   AttemptQuestion, SubmitAnswerPayload, AttemptSummary,
-  UploadFileResponse,
+  AttemptDetail, GazeSample, UploadFileResponse,
 } from '@/types/exam';
+
+export interface AttemptExam {
+  exam_id: string;
+  title: string;
+  subject?: string;
+  duration_minutes: number;
+}
 
 export const examService = {
   create: async (payload: CreateExamPayload): Promise<ExamDetail> => {
@@ -29,6 +36,11 @@ export const examService = {
 };
 
 export const attemptService = {
+  getExam: async (attemptId: string): Promise<AttemptExam> => {
+    const res = await axiosInstance.get(`/attempts/${attemptId}/exam`);
+    return res.data;
+  },
+
   getQuestions: async (attemptId: string): Promise<AttemptQuestion[]> => {
     const res = await axiosInstance.get(`/attempts/${attemptId}/questions`);
     return res.data;
@@ -47,8 +59,13 @@ export const attemptService = {
     return res.data;
   },
 
-  get: async (attemptId: string): Promise<{ attempt: AttemptSummary; answers: any[]; proctoring_events: any[] }> => {
+  get: async (attemptId: string): Promise<AttemptDetail> => {
     const res = await axiosInstance.get(`/attempts/${attemptId}`);
+    return res.data;
+  },
+
+  getGazeSamples: async (attemptId: string): Promise<GazeSample[]> => {
+    const res = await axiosInstance.get(`/attempts/${attemptId}/gaze-samples`);
     return res.data;
   },
 };

@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { attemptService } from "@/services/exam-service";
+import GazePlot from "@/components/dashboard/GazePlot";
+import { useProctoringWebSocket } from "@/hooks/useProctoringWebSocket";
+import type { GazeSample } from "@/types/exam";
 import { Clock, Check, AlertTriangle, Eye, Mic, Monitor, Users, FileText } from "lucide-react";
+
+// Mirrors app/schemas/_mappers.py's PROCTORING_SEVERITY — used only for an
+// optimistic client-side severity label until the next full refresh.
+const CLIENT_SEVERITY: Record<string, string> = {
+  multiple_faces: "high", voice_detected: "high", multiple_speakers: "high",
+  fullscreen_exit: "high", pointer_lock_exit: "high", session_terminated: "high",
+  face_absent: "medium", paste_event: "medium", tab_switch: "medium", window_blur: "medium",
+};
+const GAZE_EVENT_TYPES = new Set(["gaze_away", "gaze_returned", "gaze_sample"]);
 
 interface AttemptDetail {
   attempt: {
@@ -56,12 +68,54 @@ export default function AttemptDetailPage() {
   const params = useParams();
   const attemptId = params?.attemptId as string;
   const [data, setData] = useState<AttemptDetail | null>(null);
+  const [gazeSamples, setGazeSamples] = useState<GazeSample[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!attemptId) return;
     attemptService.get(attemptId).then(setData).catch(() => {}).finally(() => setLoading(false));
+    attemptService.getGazeSamples(attemptId).then(setGazeSamples).catch(() => {});
   }, [attemptId]);
+
+  // ── live updates ──────────────────────────────────────────────────
+  useProctoringWebSocket({
+    attemptId: attemptId || null,
+    onEvent: (event) => {
+      if (GAZE_EVENT_TYPES.has(event.type)) {
+        setGazeSamples((prev) => [
+          ...prev,
+          {
+            timestamp: event.timestamp,
+            yaw: event.metadata?.yaw as number | undefined,
+            pitch: event.metadata?.pitch as number | undefined,
+            direction: event.metadata?.direction as string | undefined,
+            duration: event.duration,
+          },
+        ]);
+      }
+
+      setData((prev) => {
+        if (!prev) return prev;
+        const existing = prev.proctoring_events.find((e) => e.type === event.type);
+        const proctoring_events = existing
+          ? prev.proctoring_events.map((e) =>
+              e.type === event.type
+                ? { ...e, count: e.count + 1, timestamps: [...e.timestamps, event.timestamp] }
+                : e,
+            )
+          : [
+              ...prev.proctoring_events,
+              {
+                type: event.type,
+                count: 1,
+                severity: CLIENT_SEVERITY[event.type] ?? "low",
+                timestamps: [event.timestamp],
+              },
+            ];
+        return { ...prev, proctoring_events };
+      });
+    },
+  });
 
   if (loading) {
     return (
@@ -103,6 +157,10 @@ export default function AttemptDetailPage() {
           <p className="text-[10px] font-medium text-bark uppercase tracking-wide">Submitted</p>
           <p className="text-sm font-semibold text-espresso mt-1">{attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleDateString() : "--"}</p>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <GazePlot samples={gazeSamples} />
       </div>
 
       {answers.length > 0 && (

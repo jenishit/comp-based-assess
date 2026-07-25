@@ -1,23 +1,35 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { logService } from '@/lib/api';
+import type { ProctoringEventType } from '@/types/exam';
 
 interface UseExamSecurityProps {
-  sessionId: string;
+  attemptId: string;
   maxViolations: number; // We set this to 2 (1 warning + 1 strike)
-  onTerminated: () => void; // Redirect to blocked page
+  onTerminated: (reason: string) => void; // Redirect to blocked page
+}
+
+async function reportSecurityEvent(
+  attemptId: string,
+  type: ProctoringEventType,
+  metadata?: Record<string, string | number | boolean>,
+): Promise<void> {
+  await fetch(`/api/v1/attempts/${attemptId}/proctoring-events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, timestamp: Date.now(), metadata }),
+  });
 }
 
 export const useExamSecurity = ({
-  sessionId,
+  attemptId,
   maxViolations = 2,
   onTerminated,
 }: UseExamSecurityProps) => {
   const [violations, setViolations] = useState(0);
   const [isTerminated, setIsTerminated] = useState(false);
-  
+
   // Use a ref to keep the latest violations count in the event listener
   const violationsRef = useRef(violations);
-  
+
   // Keep ref in sync with state
   useEffect(() => {
     violationsRef.current = violations;
@@ -25,34 +37,30 @@ export const useExamSecurity = ({
 
   const terminateExam = useCallback(async (reason: string) => {
     if (isTerminated) return;
-    
+
     setIsTerminated(true);
     setViolations(maxViolations);
-    
+
     // Fire-and-forget the termination event to the backend
     try {
-      await logService.terminateSession(sessionId, reason);
+      await reportSecurityEvent(attemptId, 'session_terminated', { reason });
     } catch (error) {
       console.error('Failed to send termination event:', error);
     }
-    
-    // Redirect to the blocked page
-    onTerminated();
-  }, [sessionId, isTerminated, onTerminated, maxViolations]);
 
-  const handleViolation = useCallback(async (eventType: string) => {
+    // Redirect to the blocked page
+    onTerminated(reason);
+  }, [attemptId, isTerminated, onTerminated, maxViolations]);
+
+  const handleViolation = useCallback(async (eventType: ProctoringEventType) => {
     const currentCount = violationsRef.current + 1;
     setViolations(currentCount);
-    
-    // Send the focus loss event to the backend
+
+    // Send the violation event to the backend
     try {
-      await logService.sendFocusEvent(sessionId, {
-        timestamp: Date.now(),
-        event_type: eventType,
-        violation_count: currentCount,
-      });
+      await reportSecurityEvent(attemptId, eventType, { violation_count: currentCount });
     } catch (error) {
-      console.error('Failed to send focus event:', error);
+      console.error('Failed to send violation event:', error);
     }
 
     // THE 1-WARNING, 2ND-STRIKE RULE
@@ -66,14 +74,14 @@ export const useExamSecurity = ({
         `If you do this again (2nd violation), your exam will be automatically terminated.`
       );
     }
-  }, [sessionId, maxViolations, terminateExam]);
+  }, [attemptId, maxViolations, terminateExam]);
 
   // Main effect: Attach the security listeners
   useEffect(() => {
     // 1. Visibility API (Tab switch / Minimize)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        handleViolation('visibility_hidden');
+        handleViolation('tab_switch');
       }
     };
 
@@ -88,7 +96,6 @@ export const useExamSecurity = ({
     // 3. Window Focus (Re-entry - we log it but don't count it as a violation)
     const handleWindowFocus = () => {
       // We can optionally send a "focus_visible" event for telemetry, but not count it.
-      // logService.sendFocusEvent(sessionId, { timestamp: Date.now(), event_type: 'focus_visible', violation_count: violationsRef.current });
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -105,7 +112,7 @@ export const useExamSecurity = ({
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('contextmenu', preventContextMenu);
     };
-  }, [handleViolation, sessionId]);
+  }, [handleViolation]);
 
-  return { violations, isTerminated };
+  return { violations, isTerminated, handleViolation };
 };

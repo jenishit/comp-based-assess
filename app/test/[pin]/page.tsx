@@ -1,171 +1,282 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Brain, ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { useState, useRef, useCallback, useEffect, useMemo, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Brain, ChevronLeft, ChevronRight, Send, Loader2 } from "lucide-react";
 import { useProctoringMonitor } from "@/hooks/useProctoringMonitor";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
-import type { ExamSession, Answer, ProctoringEvent } from "@/types/exam";
+import { useExamSecurity } from "@/hooks/useExamSecurity";
+import { useKeystrokeDynamics } from "@/hooks/useKeystrokeDynamics";
+import { attemptService } from "@/services/exam-service";
+import type { ExamSession, Answer, Question } from "@/types/exam";
+import { toast } from "sonner";
 import ExamTimer from "../_components/ExamTimer";
 import ProctorPanel from "../_components/ProctorPanel";
 import QuestionNav from "../_components/QuestionNav";
 import QuestionCard from "../_components/QuestionCard";
 
-// ── sample data (replace with real API fetch) ─────────────────────────
-const SAMPLE_EXAM: ExamSession = {
-  examId: "exam-001",
-  pin: "482619",
-  title: "Introduction to Machine Learning",
-  subject: "Computer Science",
-  durationMinutes: 45,
-  studentName: "Student",
-  studentEmail: "",
-  questions: [
-    {
-      id: "q1",
-      type: "mcq",
-      marks: 2,
-      bloomLevel: "understand",
-      text: "A hospital's diagnostic model achieves 94% accuracy on test data but only 61% accuracy in deployment. Given that the training set has severe class imbalance, which strategy is most likely to resolve this gap?",
-      options: [
-        "Increase the total training data volume uniformly",
-        "Apply SMOTE oversampling to the minority class",
-        "Reduce the model's learning rate during fine-tuning",
-        "Replace the accuracy metric with recall in the loss function",
-      ],
-    },
-    {
-      id: "q2",
-      type: "mcq",
-      marks: 2,
-      bloomLevel: "analyze",
-      text: "In a transformer-based language model, which component is primarily responsible for allowing the model to weigh the relevance of different input tokens relative to each other?",
-      options: [
-        "Feed-forward network",
-        "Layer normalisation",
-        "Self-attention mechanism",
-        "Positional encoding",
-      ],
-    },
-    {
-      id: "q3",
-      type: "short_answer",
-      marks: 5,
-      bloomLevel: "evaluate",
-      text: "A company deploys a recommendation system trained on pre-pandemic user behaviour. After two years, the model's performance degrades significantly. Explain the likely cause of this degradation and propose two concrete approaches to address it, justifying each choice.",
-    },
-    {
-      id: "q4",
-      type: "mcq",
-      marks: 2,
-      bloomLevel: "apply",
-      text: "During gradient descent on a non-convex loss surface, a model consistently converges to the same suboptimal local minimum regardless of the number of training epochs. Which modification is most likely to help escape this local minimum?",
-      options: [
-        "Decreasing the batch size to 1 (SGD)",
-        "Adding L2 regularisation to the loss",
-        "Using a cyclic learning rate schedule",
-        "Increasing the number of hidden layers",
-      ],
-    },
-    {
-      id: "q5",
-      type: "short_answer",
-      marks: 6,
-      bloomLevel: "create",
-      text: "You are designing an anomaly detection system for a manufacturing pipeline where defective products occur less than 0.3% of the time. Describe the complete modelling pipeline you would build, including the choice of algorithm, how you would handle class imbalance, which evaluation metrics you would prioritise and why, and how you would deploy the system with monitoring in place.",
-    },
-  ],
-};
-
 // ── page component ────────────────────────────────────────────────────
-export default function ExamPage() {
+function ExamPageContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pin = params?.pin as string;
+  const attemptId = searchParams?.get("attempt_id") ?? "";
 
-  const [exam] = useState<ExamSession>(SAMPLE_EXAM);
+  const [examMeta, setExamMeta] = useState<{
+    exam_id: string; title: string; subject?: string; duration_minutes: number;
+  } | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Map<string, Answer>>(new Map());
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState(false);
-  const [events, setEvents] = useState<ProctoringEvent[]>([]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const startRef = useRef<Record<string, number>>({});
 
+  // ── load the real exam + questions from the attempt_id ─────────────
+  useEffect(() => {
+    if (!attemptId) {
+      router.replace("/instructor/join");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [exam, qs] = await Promise.all([
+          attemptService.getExam(attemptId),
+          attemptService.getQuestions(attemptId),
+        ]);
+        if (cancelled) return;
+        setExamMeta(exam);
+        setQuestions(
+          [...qs]
+            .sort((a, b) => a.order - b.order)
+            .map((q) => ({
+              id: q.question_id,
+              type: q.type,
+              text: q.text,
+              options: q.options,
+              marks: q.marks,
+              bloomLevel: q.bloomLevel as Question["bloomLevel"],
+            }))
+        );
+      } catch {
+        if (!cancelled) {
+          setLoadError("Could not load this exam. The link may be invalid or expired.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [attemptId, router]);
+
+  const exam: ExamSession | null = useMemo(() => {
+    if (!examMeta) return null;
+    return {
+      examId: examMeta.exam_id,
+      pin,
+      title: examMeta.title,
+      subject: examMeta.subject ?? "",
+      durationMinutes: examMeta.duration_minutes,
+      questions,
+      studentName: "",
+      studentEmail: "",
+    };
+  }, [examMeta, questions, pin]);
+
   // start timing for current question
   useEffect(() => {
-    const id = exam.questions[currentIdx]?.id;
+    const id = exam?.questions[currentIdx]?.id;
     if (id && !startRef.current[id]) startRef.current[id] = Date.now();
-  }, [currentIdx, exam.questions]);
+  }, [currentIdx, exam]);
 
   // ── proctoring ──────────────────────────────────────────────────────
-  const handleEvent = useCallback((ev: ProctoringEvent) => {
-    setEvents((prev) => [ev, ...prev.slice(0, 49)]);
-  }, []);
-
+  // Each hook persists its own events server-side (POST /attempts/{id}/proctoring-events);
+  // no local event log is needed at this component level.
   const proctoringState = useProctoringMonitor(videoRef, {
-    examId: exam.examId,
-    enabled: !submitted,
-    onEvent: handleEvent,
+    attemptId,
+    enabled: !submitted && !loading,
   });
 
   const audioState = useAudioMonitor({
-    enabled: !submitted,
-    onEvent: handleEvent,
+    attemptId,
+    enabled: !submitted && !loading,
   });
+
+  useKeystrokeDynamics({ attemptId, enabled: !submitted && !loading });
+
+  // ── security (1-warning, 2nd-strike) ───────────────────────────────
+  const { handleViolation } = useExamSecurity({
+    attemptId,
+    maxViolations: 2,
+    onTerminated: (reason) => {
+      router.push(`/test/blocked?reason=${encodeURIComponent(reason)}`);
+    },
+  });
+
+  // ── fullscreen enforcement ──────────────────────────────────────────
+  useEffect(() => {
+    if (submitted || loading) return;
+
+    document.documentElement.requestFullscreen?.().catch(() => {
+      /* user or browser denied — nothing more we can do here */
+    });
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !submitted) {
+        handleViolation("fullscreen_exit");
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted, loading]);
+
+  // ── pointer lock enforcement ────────────────────────────────────────
+  // Fragile by nature of the browser API — Escape exits fullscreen and
+  // pointer lock together in most browsers, so this will often double-count
+  // alongside the fullscreen check above. Acceptable for a first pass.
+  const pointerLockIntentionalRef = useRef(false);
+
+  useEffect(() => {
+    if (submitted || loading) return;
+
+    const requestLock = () => {
+      if (document.fullscreenElement && !document.pointerLockElement) {
+        document.body.requestPointerLock?.();
+      }
+    };
+    document.addEventListener("click", requestLock);
+
+    const handlePointerLockChange = () => {
+      if (!document.pointerLockElement && !pointerLockIntentionalRef.current && !submitted) {
+        handleViolation("pointer_lock_exit");
+      }
+      pointerLockIntentionalRef.current = false;
+    };
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+
+    return () => {
+      document.removeEventListener("click", requestLock);
+      document.removeEventListener("pointerlockchange", handlePointerLockChange);
+      if (document.pointerLockElement) {
+        pointerLockIntentionalRef.current = true;
+        document.exitPointerLock();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted, loading]);
+
+  // ── answer persistence ───────────────────────────────────────────────
+  const syncAnswer = useCallback(
+    (questionId: string, value: string, flag: boolean, timeSpent: number) => {
+      attemptService
+        .submitAnswer(attemptId, {
+          question_id: questionId,
+          value,
+          time_spent_seconds: timeSpent,
+          flagged: flag,
+        })
+        .catch(() => {
+          toast.error("Failed to save your answer — check your connection.");
+        });
+    },
+    [attemptId],
+  );
 
   // ── answer handling ─────────────────────────────────────────────────
   const handleAnswer = useCallback(
     (value: string) => {
-      const q = exam.questions[currentIdx];
+      const q = exam?.questions[currentIdx];
+      if (!q) return;
       const now = Date.now();
       const timeSpent = Math.round(
         (now - (startRef.current[q.id] ?? now)) / 1000,
       );
+      const isFlagged = flagged.has(currentIdx);
       setAnswers((prev) => {
         const next = new Map(prev);
         next.set(q.id, {
           questionId: q.id,
           value,
           timeSpentSeconds: timeSpent,
-          flagged: false,
+          flagged: isFlagged,
         });
         return next;
       });
+      syncAnswer(q.id, value, isFlagged, timeSpent);
     },
-    [currentIdx, exam.questions],
+    [currentIdx, exam, flagged, syncAnswer],
   );
 
   const toggleFlag = useCallback(() => {
+    const q = exam?.questions[currentIdx];
+    const willBeFlagged = !flagged.has(currentIdx);
+
     setFlagged((prev) => {
       const next = new Set(prev);
-      next.has(currentIdx) ? next.delete(currentIdx) : next.add(currentIdx);
+      if (willBeFlagged) next.add(currentIdx);
+      else next.delete(currentIdx);
       return next;
     });
-  }, [currentIdx]);
+
+    if (q) {
+      const existing = answers.get(q.id);
+      if (existing) {
+        syncAnswer(q.id, existing.value, willBeFlagged, existing.timeSpentSeconds);
+      }
+    }
+  }, [currentIdx, exam, flagged, answers, syncAnswer]);
 
   // ── submit ──────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (submitted) return;
-    setSubmitted(true);
-    const payload = {
-      examId: exam.examId,
-      answers: Array.from(answers.values()),
-      events: events,
-    };
-    await fetch("/api/exam/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
-    router.push(`/exam/${pin}/results`);
-  }, [submitted, exam.examId, answers, events, router, pin]);
+    try {
+      await attemptService.submitAttempt(attemptId);
+      setSubmitted(true);
+    } catch {
+      toast.error("Failed to submit — please try again.");
+    }
+  }, [submitted, attemptId]);
 
-  const answered = new Set(
+  const answered = useMemo(() => new Set(
     Array.from(answers.entries())
       .filter(([, a]) => a.value.trim() !== "")
-      .map(([id]) => exam.questions.findIndex((q) => q.id === id)),
-  );
+      .map(([id]) => exam?.questions.findIndex((q) => q.id === id) ?? -1)
+      .filter((i) => i >= 0),
+  ), [answers, exam]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-espresso flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-sage mx-auto mb-3" aria-hidden="true" />
+          <p className="text-[#B8AEA8] text-[15px]">Loading exam…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || !exam) {
+    return (
+      <div className="min-h-screen bg-espresso flex items-center justify-center px-6">
+        <p className="text-[#B8AEA8] text-[15px] text-center max-w-sm">
+          {loadError ?? "Exam not found."}
+        </p>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -177,7 +288,7 @@ export default function ExamPage() {
           <h2 className="text-2xl font-medium text-white mb-2">
             Exam submitted!
           </h2>
-          <p className="text-[#B8AEA8] text-[15px]">Redirecting to results…</p>
+          <p className="text-[#B8AEA8] text-[15px]">Your answers are being graded.</p>
         </div>
       </div>
     );
@@ -311,5 +422,13 @@ export default function ExamPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function ExamPage() {
+  return (
+    <Suspense fallback={null}>
+      <ExamPageContent />
+    </Suspense>
   );
 }

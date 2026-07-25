@@ -60,7 +60,7 @@ export default function JoinExamPage() {
 
   const enterExam = () => {
     if (examInfo) {
-      router.push(`/test/${pin.join("")}`);
+      router.push(`/test/${pin.join("")}?attempt_id=${examInfo.attempt_id}`);
     }
   };
 

@@ -10,6 +10,7 @@ export interface AudioMonitorState {
 }
 
 interface UseAudioMonitorOptions {
+  attemptId:              string;
   enabled?:               boolean;
   onEvent?:               (event: ProctoringEvent) => void;
   /** RMS amplitude threshold (0–255) for voice detection. Default 22. */
@@ -47,8 +48,9 @@ function variance(bins: Uint8Array): number {
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────
-export function useAudioMonitor(options: UseAudioMonitorOptions = {}): AudioMonitorState {
+export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorState {
   const {
+    attemptId,
     enabled              = true,
     onEvent,
     voiceThreshold       = 22,
@@ -84,13 +86,13 @@ export function useAudioMonitor(options: UseAudioMonitorOptions = {}): AudioMoni
         ...(meta ? { metadata: meta } : {}),
       };
       onEvent?.(event);
-      fetch("/api/exam/proctor-event", {
+      fetch(`/api/v1/attempts/${attemptId}/proctoring-events`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(event),
       }).catch(() => { /* fire-and-forget */ });
     },
-    [onEvent],
+    [attemptId, onEvent],
   );
 
   // ── per-frame analysis loop ────────────────────────────────────────
