@@ -29,7 +29,7 @@ export default function ExamsListPage() {
           <p className="text-bark text-sm mt-1">Manage your exams and share PINs with students.</p>
         </div>
         <Link
-          href="/dashboard/exams/new"
+          href="/instructor/exams/new"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors no-underline"
         >
           <PlusCircle size={16} />
@@ -49,7 +49,7 @@ export default function ExamsListPage() {
           <h3 className="text-base font-medium text-espresso mb-1">No exams yet</h3>
           <p className="text-sm text-bark mb-4">Create your first exam to get started.</p>
           <Link
-            href="/dashboard/exams/new"
+            href="/instructor/exams/new"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors no-underline"
           >
             <PlusCircle size={16} />
@@ -68,7 +68,7 @@ export default function ExamsListPage() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <Link href={`/dashboard/exams/${exam.id}`} className="no-underline">
+                <Link href={`/instructor/exams/${exam.id}`} className="no-underline">
                   <h3 className="text-sm font-semibold text-espresso truncate hover:text-forest transition-colors">
                     {exam.title}
                   </h3>
@@ -101,7 +101,7 @@ export default function ExamsListPage() {
               </button>
 
               <Link
-                href={`/dashboard/exams/${exam.id}`}
+                href={`/instructor/exams/${exam.id}`}
                 className="text-xs font-medium text-forest hover:underline shrink-0 no-underline"
               >
                 View details

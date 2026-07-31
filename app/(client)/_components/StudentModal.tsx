@@ -1,17 +1,23 @@
 'use client';
 
-import { ArrowRight, CircleCheck, Laptop, X } from 'lucide-react';
+import { ArrowRight, CircleCheck, Laptop, Loader2, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { examService } from '@/services/exam-service';
+import { toast } from 'sonner';
 
 interface StudentModalProps {
   onClose: () => void;
 }
 
 export default function StudentModal({ onClose }: StudentModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -21,11 +27,11 @@ export default function StudentModal({ onClose }: StudentModalProps) {
   }, [step]);
 
   const handlePinChange = (index: number, value: string) => {
-    const digits = value.replace(/\D/g, '').slice(-1);
+    const valueChar = value.replace(/[^a-zA-Z0-9]/g, '').slice(-1);
     const newPin = [...pin];
-    newPin[index] = digits;
+    newPin[index] = valueChar;
     setPin(newPin);
-    if (digits && index < 5) {
+    if (valueChar && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -39,11 +45,33 @@ export default function StudentModal({ onClose }: StudentModalProps) {
   const isPinComplete = pin.every((d) => d);
   const isDetailsComplete = name.trim() !== '' && email.trim() !== '';
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (step === 1 && isPinComplete) {
       setStep(2);
-    } else if (step === 2 && isDetailsComplete) {
-      setStep(3);
+      return;
+    }
+
+    if (step === 2 && isDetailsComplete) {
+      setJoining(true);
+      try {
+        const res = await examService.join({ pin: pin.join(''), name, email });
+        if (res.success) {
+          setAttemptId(res.data.attempt_id);
+          setStep(3);
+        } else {
+          toast.error(res.message || 'Failed to join exam');
+        }
+      } catch {
+        toast.error('Invalid PIN or exam not found');
+      } finally {
+        setJoining(false);
+      }
+    }
+  };
+
+  const enterExam = () => {
+    if (attemptId) {
+      router.push(`/test/${pin.join('')}?attempt_id=${attemptId}`);
     }
   };
 
@@ -149,12 +177,20 @@ export default function StudentModal({ onClose }: StudentModalProps) {
             </div>
             <button
               onClick={handleNextStep}
-              disabled={!isDetailsComplete}
+              disabled={!isDetailsComplete || joining}
               className={`mt-4 w-full py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-opacity ${
-                isDetailsComplete ? 'bg-forest text-white hover:opacity-90' : 'bg-forest/60 text-white/60 cursor-not-allowed'
+                isDetailsComplete && !joining ? 'bg-forest text-white hover:opacity-90' : 'bg-forest/60 text-white/60 cursor-not-allowed'
               }`}
             >
-              Join exam <ArrowRight className="w-4 h-4" />
+              {joining ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Joining...
+                </>
+              ) : (
+                <>
+                  Join exam <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </>
         )}
@@ -166,9 +202,12 @@ export default function StudentModal({ onClose }: StudentModalProps) {
             </div>
             <p className="font-medium text-lg text-dark">Welcome, {name || 'student'}!</p>
             <p className="text-sm text-brown mt-1.5 leading-relaxed">
-              You&apos;ve joined the session. The instructor will start shortly — make sure your camera is enabled and you&apos;re in a quiet space.
+              You&apos;ve joined the session. Make sure your camera is enabled and you&apos;re in a quiet space.
             </p>
-            <button className="mt-5 bg-forest text-white px-6 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <button
+              onClick={enterExam}
+              className="mt-5 bg-forest text-white px-6 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer border-0"
+            >
               Enter exam room <ArrowRight className="w-4 h-4" />
             </button>
           </div>

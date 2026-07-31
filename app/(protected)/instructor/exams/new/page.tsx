@@ -49,14 +49,19 @@ export default function CreateExamPage() {
     setFile(f);
     setUploading(true);
     try {
-      const res = await fileService.upload(f);
-      if (res.file_path) {
-        setFileId(res.saved_filename.replace('.pdf', ''));
-        setStep("details");
-        toast.success("PDF uploaded successfully");
-      } else {
-        toast.error("Upload failed");
-      }
+      const { upload_url, file_key } = await fileService.getPresignedUpload();
+
+      const uploadRes = await fetch(upload_url, {
+        method: "PUT",
+        body: f,
+        headers: { "Content-Type": "application/pdf" },
+      });
+
+      if (!uploadRes.ok) throw new Error("Direct upload failed");
+
+      setFileId(file_key.replace(".pdf", ""));
+      setStep("details");
+      toast.success("PDF uploaded successfully");
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("Failed to upload file");
@@ -79,18 +84,21 @@ export default function CreateExamPage() {
       });
 
       if (fileId) {
-        await questionService.generate({
-          file_id: fileId,
-          count: data.mcq_count,
-          types: ["mcq", "short_answer"],
-        }).catch(() => {});
+        await questionService.generate(
+          { file_id: fileId, count: data.mcq_count, types: ["mcq", "short_answer"] },
+          { skipGlobalSignOut: true }
+        ).catch((err) => {
+          console.error("Question generation failed to start:", err);
+          toast.error("Exam created, but question generation didn't start. You can retry from the exam page.");
+        });
       }
 
       setStep("done");
       toast.success("Exam created successfully!");
-      setTimeout(() => router.push(`/dashboard/exams/${exam.id}`), 1500);
-    } catch {
+      setTimeout(() => router.push(`/instructor/exams/${exam.id}`), 1500);
+    } catch (err) {
       toast.error("Failed to create exam");
+      console.log(err);
       setStep("details");
     } finally {
       setCreating(false);

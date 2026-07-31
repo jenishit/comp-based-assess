@@ -2,6 +2,6 @@
 
 import DashboardHome from "../_components/DashboardHome";
 
-export default function InstructorDashboardPage() {
+export default function StudentDashboardPage() {
   return <DashboardHome />;
 }

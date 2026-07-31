@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { examService } from "@/services/exam-service";
-import type { ExamDetail, StudentAttempt } from "@/types/exam";
-import { FileText, Copy, Check, Users, Clock, AlertTriangle, Eye, Mic, Monitor } from "lucide-react";
+import { examService, questionService } from "@/services/exam-service";
+import type { ExamDetail, QuestionJob, StudentAttempt } from "@/types/exam";
+import { FileText, Copy, Check, Users, Clock, AlertTriangle, Eye, Mic, Monitor, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
+import RosterPanel from "./_components/RosterPanel";
 
 const severityColor: Record<string, string> = {
   low: "text-amber-500 bg-amber-50",
@@ -27,16 +30,76 @@ export default function ExamDetailPage() {
   const [exam, setExam] = useState<ExamDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<QuestionJob["status"] | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (!examId) return;
     examService.get(examId).then(setExam).catch(() => {}).finally(() => setLoading(false));
   }, [examId]);
 
+  useEffect(() => {
+    if (!examId) return;
+    let cancelled = false;
+    let inFlight = false;
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const checkStatus = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const job = await questionService.getGenerationStatus(examId);
+        if (cancelled) return;
+        setGenerationStatus(job.status);
+        setGenerationError(job.error ?? null);
+        if (job.status === "completed" || job.status === "failed") {
+          clearInterval(intervalId);
+          if (job.status === "completed") {
+            examService.get(examId).then((updated) => {
+              if (!cancelled) setExam(updated);
+            }).catch(() => {});
+          }
+        }
+      } catch {
+        // Transient failure (slow backend, timeout, auth race) — let the
+        // next scheduled tick retry instead of giving up on the whole poll.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    checkStatus();
+    intervalId = setInterval(checkStatus, 4000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [examId]);
+
   const copyPin = async (pin: string) => {
     await navigator.clipboard.writeText(pin);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRetry = async () => {
+    if (!exam?.file_id) return;
+    setRetrying(true);
+    try {
+      await questionService.generate(
+        { file_id: exam.file_id, count: 10, types: ["mcq", "short_answer"] },
+        { skipGlobalSignOut: true }
+      );
+      setGenerationStatus("pending");
+      setGenerationError(null);
+    } catch (err) {
+      console.error("Retry failed:", err);
+      toast.error("Failed to retry generation");
+    } finally {
+      setRetrying(false);
+    }
   };
 
   if (loading) {
@@ -100,8 +163,54 @@ export default function ExamDetailPage() {
           <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
             <FileText size={14} /> Questions
           </div>
-          <p className="text-2xl font-semibold text-espresso">{exam.question_count || "--"}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-semibold text-espresso">{exam.question_count || "--"}</p>
+            {exam.question_count > 0 && (
+              <Link
+                href={`/instructor/exams/${exam.id}/questions`}
+                className="text-xs font-medium text-forest hover:underline no-underline"
+              >
+                View
+              </Link>
+            )}
+            {generationStatus === "pending" || generationStatus === "processing" ? (
+              <Loader2 size={16} className="animate-spin text-forest" />
+            ) : generationStatus === "failed" ? (
+              <span className="text-xs text-red-500 font-medium">failed</span>
+            ) : generationStatus === "completed" && generationError ? (
+              <span className="text-xs text-amber-600 font-medium">partial</span>
+            ) : null}
+          </div>
+          {generationStatus === "pending" || generationStatus === "processing" ? (
+            <p className="text-xs text-bark mt-1">Generating questions...</p>
+          ) : generationStatus === "failed" ? (
+            <div className="mt-2">
+              <p className="text-xs text-red-500 mb-1">{generationError || "Generation failed"}</p>
+              <button
+                onClick={handleRetry}
+                disabled={retrying}
+                className="text-xs font-medium text-forest hover:underline disabled:opacity-50 cursor-pointer bg-transparent border-0 p-0"
+              >
+                {retrying ? "Retrying..." : "Retry"}
+              </button>
+            </div>
+          ) : generationStatus === "completed" && generationError ? (
+            <div className="mt-2">
+              <p className="text-xs text-amber-600">{generationError}</p>
+              <button
+                onClick={handleRetry}
+                disabled={retrying}
+                className="text-xs font-medium text-forest hover:underline disabled:opacity-50 cursor-pointer bg-transparent border-0 p-0"
+              >
+                {retrying ? "Retrying..." : "Retry to generate remaining questions"}
+              </button>
+            </div>
+          ) : null}
         </div>
+      </div>
+
+      <div className="mb-6">
+        <RosterPanel examId={exam.id} />
       </div>
 
       {(!exam.students || exam.students.length === 0) ? (

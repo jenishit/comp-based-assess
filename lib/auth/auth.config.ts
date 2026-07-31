@@ -38,6 +38,7 @@ export const authConfig: NextAuthConfig = {
             id: email,
             email,
             accessToken: body.access_token,
+            refreshToken: body.refresh_token,
             role: body.role,
             name: body.name,
           }
@@ -68,23 +69,51 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.accessToken = user.accessToken
         token.refreshToken = user.refreshToken
+        token.accessTokenExpires = Date.now() + 60 * 60 * 1000
         token.role = user.role
         token.name = user.name
         token.user_id = user.id
         token.role_id = user.role_id
         token.instructor_profile_id = user.instructor_profile_id
         token.session_id = user.session_id
+        return token
+      }
+
+      // Refresh the access token before it expires
+      if (Date.now() < (token.accessTokenExpires as number)) {
+        return token
+      }
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: token.refreshToken }),
+        })
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error(`refresh failed: ${res.status} ${body}`)
+        }
+        const refreshed = await res.json()
+        token.accessToken = refreshed.access_token
+        token.refreshToken = refreshed.refresh_token
+        token.accessTokenExpires = Date.now() + 60 * 60 * 1000
+        delete token.error
+      } catch (e) {
+        console.error('[auth] token refresh failed:', e)
+        token.error = 'RefreshAccessTokenError'
       }
       return token
     },
 
     async session({ session, token }) {
-      //If token refresh failed, don't return a valid session
+      // Surface the refresh error, but keep attaching the last-known token below
+      // regardless — dropping it here would send subsequent requests out with no
+      // Authorization header at all (a bare, confusing 401) instead of the last
+      // (now-invalid) token, which yields a real backend-validated 401 and lets
+      // the axios interceptor's single sign-out path handle it.
       if (token.error === 'RefreshAccessTokenError') {
-        return {
-          ...session,
-          error: 'RefreshAccessTokenError',
-        }
+        session.error = 'RefreshAccessTokenError';
       }
       // Attach accessToken and user_id
       session.accessToken = token.accessToken

@@ -1,5 +1,6 @@
 "use client";
 
+import AuthProvider from "@/providers/AuthProvider";
 import { useUserStore } from "@/stores/userStore";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -20,18 +21,18 @@ import {
 import { useState } from "react";
 
 const teacherNav = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Exams", href: "/dashboard/exams", icon: FileText },
-  { label: "Create Exam", href: "/dashboard/exams/new", icon: PlusCircle },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Dashboard", href: "/instructor", icon: LayoutDashboard },
+  { label: "My Exams", href: "/instructor/exams", icon: FileText },
+  { label: "Create Exam", href: "/instructor/exams/new", icon: PlusCircle },
+  { label: "Settings", href: "/instructor/settings", icon: Settings },
 ];
 
 const studentNav = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Join Exam", href: "/dashboard/join", icon: Key },
-  { label: "Upload PDF", href: "/dashboard/upload", icon: Upload },
-  { label: "My Attempts", href: "/dashboard/attempts", icon: ClipboardList },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Dashboard", href: "/student", icon: LayoutDashboard },
+  { label: "Join Exam", href: "/student/join", icon: Key },
+  { label: "Upload PDF", href: "/student/upload", icon: Upload },
+  { label: "My Attempts", href: "/student/attempts", icon: ClipboardList },
+  { label: "Settings", href: "/student/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -46,10 +47,11 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userType = session?.role || user?.role || "STUDENT";
-  const isTeacher = userType === "proctor" || userType === "ADMIN" || userType === "TEACHER";
+  const isTeacher = userType === "TEACHER";
   const navItems = isTeacher ? teacherNav : studentNav;
 
   return (
+    <AuthProvider>
     <div className="min-h-screen bg-background flex">
       {sidebarOpen && (
         <div
@@ -149,5 +151,6 @@ export default function DashboardLayout({
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>
+    </AuthProvider>
   );
 }

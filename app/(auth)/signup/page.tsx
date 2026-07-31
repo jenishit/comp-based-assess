@@ -79,7 +79,7 @@ export default function SignupPage() {
       }
 
       toast.success("Registered and logged in successfully.");
-      router.push("/dashboard");
+      router.push(data.user_type === "TEACHER" ? "/instructor" : "/student");
       setLoading(false);
     } catch (err) {
       toast.error(

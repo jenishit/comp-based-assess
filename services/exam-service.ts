@@ -4,6 +4,7 @@ import type {
   JoinExamPayload, JoinExamResponse, QuestionJob,
   AttemptQuestion, SubmitAnswerPayload, AttemptSummary,
   AttemptDetail, GazeSample, UploadFileResponse,
+  PresignedUploadResponse, RosterEntry, RosterUploadResponse,
 } from '@/types/exam';
 
 export interface AttemptExam {
@@ -32,6 +33,20 @@ export const examService = {
   join: async (payload: JoinExamPayload): Promise<JoinExamResponse> => {
     const res = await axiosInstance.post('/exams/join', payload);
     return res.data;
+  },
+
+  getRoster: async (examId: string): Promise<RosterEntry[]> => {
+    const res = await axiosInstance.get(`/exams/${examId}/roster`);
+    return res.data;
+  },
+
+  uploadRoster: async (examId: string, entries: { name: string; email: string }[]): Promise<RosterUploadResponse> => {
+    const res = await axiosInstance.post(`/exams/${examId}/roster`, { entries });
+    return res.data;
+  },
+
+  deleteRosterEntry: async (examId: string, entryId: string): Promise<void> => {
+    await axiosInstance.delete(`/exams/${examId}/roster/${entryId}`);
   },
 };
 
@@ -71,6 +86,11 @@ export const attemptService = {
 };
 
 export const fileService = {
+  getPresignedUpload: async (): Promise<PresignedUploadResponse> => {
+    const res = await axiosInstance.get('/files/presigned-upload');
+    return res.data;
+  },
+
   upload: async (file: File): Promise<UploadFileResponse> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -80,13 +100,20 @@ export const fileService = {
 };
 
 export const questionService = {
-  generate: async (payload: { file_id: string; count: number; types: string[] }): Promise<{ job_id: string }> => {
-    const res = await axiosInstance.post('/questions/generate', payload);
+  generate: async (payload: { file_id: string; count: number; types: string[] }, config?: { skipGlobalSignOut?: boolean }): Promise<{ job_id: string }> => {
+    const res = await axiosInstance.post('/questions/generate', payload, {
+      _skipGlobalSignOut: config?.skipGlobalSignOut,
+    });
     return res.data;
   },
 
   getJob: async (jobId: string): Promise<QuestionJob> => {
     const res = await axiosInstance.get(`/questions/jobs/${jobId}`);
+    return res.data;
+  },
+
+  getGenerationStatus: async (examId: string): Promise<QuestionJob> => {
+    const res = await axiosInstance.get(`/questions/exams/${examId}/generation-status`);
     return res.data;
   },
 };

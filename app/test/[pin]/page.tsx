@@ -40,7 +40,7 @@ function ExamPageContent() {
   // ── load the real exam + questions from the attempt_id ─────────────
   useEffect(() => {
     if (!attemptId) {
-      router.replace("/instructor/join");
+      router.replace("/student/join");
       return;
     }
     let cancelled = false;
@@ -179,9 +179,14 @@ function ExamPageContent() {
   }, [submitted, loading]);
 
   // ── answer persistence ───────────────────────────────────────────────
-  const syncAnswer = useCallback(
+  // Debounced per-question: a short-answer textarea fires this on every
+  // keystroke, and firing a save request per keystroke was flooding the
+  // (remote, occasionally slow) backend and failing almost every time.
+  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const submitAnswerNow = useCallback(
     (questionId: string, value: string, flag: boolean, timeSpent: number) => {
-      attemptService
+      return attemptService
         .submitAnswer(attemptId, {
           question_id: questionId,
           value,
@@ -194,6 +199,35 @@ function ExamPageContent() {
     },
     [attemptId],
   );
+
+  const syncAnswer = useCallback(
+    (questionId: string, value: string, flag: boolean, timeSpent: number, immediate = false) => {
+      const existing = debounceTimers.current.get(questionId);
+      if (existing) clearTimeout(existing);
+
+      if (immediate) {
+        debounceTimers.current.delete(questionId);
+        submitAnswerNow(questionId, value, flag, timeSpent);
+        return;
+      }
+
+      debounceTimers.current.set(
+        questionId,
+        setTimeout(() => {
+          debounceTimers.current.delete(questionId);
+          submitAnswerNow(questionId, value, flag, timeSpent);
+        }, 600),
+      );
+    },
+    [submitAnswerNow],
+  );
+
+  useEffect(() => {
+    const timers = debounceTimers.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, []);
 
   // ── answer handling ─────────────────────────────────────────────────
   const handleAnswer = useCallback(
@@ -234,7 +268,7 @@ function ExamPageContent() {
     if (q) {
       const existing = answers.get(q.id);
       if (existing) {
-        syncAnswer(q.id, existing.value, willBeFlagged, existing.timeSpentSeconds);
+        syncAnswer(q.id, existing.value, willBeFlagged, existing.timeSpentSeconds, true);
       }
     }
   }, [currentIdx, exam, flagged, answers, syncAnswer]);
@@ -243,12 +277,22 @@ function ExamPageContent() {
   const handleSubmit = useCallback(async () => {
     if (submitted) return;
     try {
+      // Flush any answers still sitting in a debounce window so the last
+      // few keystrokes aren't lost if the student submits right after typing.
+      debounceTimers.current.forEach((t) => clearTimeout(t));
+      debounceTimers.current.clear();
+      await Promise.allSettled(
+        Array.from(answers.values()).map((a) =>
+          submitAnswerNow(a.questionId, a.value, a.flagged, a.timeSpentSeconds),
+        ),
+      );
+
       await attemptService.submitAttempt(attemptId);
       setSubmitted(true);
     } catch {
       toast.error("Failed to submit — please try again.");
     }
-  }, [submitted, attemptId]);
+  }, [submitted, attemptId, answers, submitAnswerNow]);
 
   const answered = useMemo(() => new Set(
     Array.from(answers.entries())

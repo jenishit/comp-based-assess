@@ -29,6 +29,12 @@ export const useExamSecurity = ({
 
   // Use a ref to keep the latest violations count in the event listener
   const violationsRef = useRef(violations);
+  // Several independent signals (visibilitychange, blur, a focus poll) can
+  // all fire for the same real-world event — dedupe by time rather than by
+  // a visibility-state heuristic, which doesn't hold on multi-monitor setups
+  // (switching to a window on another display can fire `blur` while the
+  // exam tab's own visibilityState never goes 'hidden').
+  const lastViolationAtRef = useRef(0);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -53,6 +59,10 @@ export const useExamSecurity = ({
   }, [attemptId, isTerminated, onTerminated, maxViolations]);
 
   const handleViolation = useCallback(async (eventType: ProctoringEventType) => {
+    const now = Date.now();
+    if (now - lastViolationAtRef.current < 1000) return;
+    lastViolationAtRef.current = now;
+
     const currentCount = violationsRef.current + 1;
     setViolations(currentCount);
 
@@ -85,12 +95,12 @@ export const useExamSecurity = ({
       }
     };
 
-    // 2. Window Blur (Clicked outside the browser window)
+    // 2. Window Blur (Clicked outside the browser window, e.g. another app
+    // window — including one on a second display). Double-firing alongside
+    // visibilitychange (e.g. on minimize) is handled by the dedup in
+    // handleViolation, not a visibility-state check here.
     const handleWindowBlur = () => {
-      // Only trigger if the document is actually visible (prevents double-firing on minimize)
-      if (document.visibilityState === 'visible') {
-        handleViolation('window_blur');
-      }
+      handleViolation('window_blur');
     };
 
     // 3. Window Focus (Re-entry - we log it but don't count it as a violation)
@@ -106,11 +116,26 @@ export const useExamSecurity = ({
     const preventContextMenu = (e: MouseEvent) => e.preventDefault();
     document.addEventListener('contextmenu', preventContextMenu);
 
+    // 4. Fallback focus poll — on some multi-monitor + fullscreen
+    // combinations, switching to a window on another display doesn't
+    // reliably fire `blur` or `visibilitychange` at all. document.hasFocus()
+    // is a direct, monitor-agnostic read of OS focus state.
+    let wasFocused = document.hasFocus();
+    const pollFocus = () => {
+      const focused = document.hasFocus();
+      if (wasFocused && !focused) {
+        handleViolation('window_blur');
+      }
+      wasFocused = focused;
+    };
+    const focusPollId = setInterval(pollFocus, 1500);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('contextmenu', preventContextMenu);
+      clearInterval(focusPollId);
     };
   }, [handleViolation]);
 

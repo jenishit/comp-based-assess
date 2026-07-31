@@ -85,6 +85,7 @@ export interface ExamDetail {
   subject: string;
   description?: string;
   pin: string;
+  file_id?: string;
   duration_minutes: number;
   total_marks: number;
   status: "draft" | "active" | "ended";
@@ -119,6 +120,18 @@ export interface CreateExamPayload {
   timer_minutes: number;
   file_id?: string;
   mcq_count: string
+}
+
+export interface RosterEntry {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface RosterUploadResponse {
+  added: number;
+  total: number;
+  entries: RosterEntry[];
 }
 
 export interface JoinExamPayload {
@@ -173,6 +186,11 @@ export interface UploadFileResponse {
     filename: string;
     saved_filename: string;
     size_bytes: number;
+}
+
+export interface PresignedUploadResponse {
+  upload_url: string;
+  file_key: string;
 }
 
 export interface QuestionJob {
