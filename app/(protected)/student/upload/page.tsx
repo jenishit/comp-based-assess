@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Upload, FileText, Check, Loader2, X } from "lucide-react";
-import { fileService } from "@/services/exam-service";
-import type { UploadFileResponse } from "@/types/exam";
+import { fileUploadService } from "@/services/exam-service";
+import type { UploadFileResponse } from "@/types/upload-types";
 import { toast } from "sonner";
 
 export default function UploadPage() {
@@ -19,7 +19,7 @@ export default function UploadPage() {
     setFile(f);
     setUploading(true);
     try {
-      const res = await fileService.upload(f);
+      const res = await fileUploadService(f);
       if (res.file_path) {
         setUploaded(res);
         toast.success("File uploaded successfully");

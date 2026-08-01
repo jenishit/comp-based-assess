@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { questionService } from "@/services/exam-service";
-import type { Question } from "@/types/exam";
+import { questionGenerationStatusGetService } from "@/services/exam-service";
+import type { Question } from "@/types/exam-types";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
 const bloomColor: Record<string, string> = {
@@ -26,8 +26,7 @@ export default function ExamQuestionsPage() {
   useEffect(() => {
     if (!examId) return;
     let cancelled = false;
-    questionService
-      .getGenerationStatus(examId)
+    questionGenerationStatusGetService(examId)
       .then((job) => {
         if (cancelled) return;
         setQuestions(job.questions);

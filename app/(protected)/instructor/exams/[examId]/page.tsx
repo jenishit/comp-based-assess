@@ -2,27 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { examService, questionService } from "@/services/exam-service";
-import type { ExamDetail, QuestionJob, StudentAttempt } from "@/types/exam";
-import { FileText, Copy, Check, Users, Clock, AlertTriangle, Eye, Mic, Monitor, Loader2 } from "lucide-react";
+import { examGetService, questionGenerateService, questionGenerationStatusGetService } from "@/services/exam-service";
+import type { ExamDetail, QuestionJob } from "@/types/exam-types";
+import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 import RosterPanel from "./_components/RosterPanel";
-
-const severityColor: Record<string, string> = {
-  low: "text-amber-500 bg-amber-50",
-  medium: "text-orange-600 bg-orange-50",
-  high: "text-red-600 bg-red-50",
-};
-
-const eventIcon: Record<string, typeof AlertTriangle> = {
-  face_absent: Eye,
-  multiple_faces: Users,
-  gaze_away: Eye,
-  voice_detected: Mic,
-  tab_switch: Monitor,
-  window_blur: Monitor,
-};
+import ExamStats from "./_components/ExamStats";
+import StudentList from "./_components/StudentList";
 
 export default function ExamDetailPage() {
   const params = useParams();
@@ -36,41 +22,39 @@ export default function ExamDetailPage() {
 
   useEffect(() => {
     if (!examId) return;
-    examService.get(examId).then(setExam).catch(() => {}).finally(() => setLoading(false));
+    examGetService(examId).then(setExam).catch(() => {}).finally(() => setLoading(false));
   }, [examId]);
 
   useEffect(() => {
     if (!examId) return;
     let cancelled = false;
     let inFlight = false;
-    let intervalId: ReturnType<typeof setInterval>;
 
     const checkStatus = async () => {
       if (inFlight) return;
       inFlight = true;
       try {
-        const job = await questionService.getGenerationStatus(examId);
+        const job = await questionGenerationStatusGetService(examId);
         if (cancelled) return;
         setGenerationStatus(job.status);
         setGenerationError(job.error ?? null);
         if (job.status === "completed" || job.status === "failed") {
           clearInterval(intervalId);
           if (job.status === "completed") {
-            examService.get(examId).then((updated) => {
+            examGetService(examId).then((updated) => {
               if (!cancelled) setExam(updated);
             }).catch(() => {});
           }
         }
       } catch {
-        // Transient failure (slow backend, timeout, auth race) — let the
-        // next scheduled tick retry instead of giving up on the whole poll.
+        // Transient failure — let the next scheduled tick retry.
       } finally {
         inFlight = false;
       }
     };
 
+    const intervalId = setInterval(checkStatus, 4000);
     checkStatus();
-    intervalId = setInterval(checkStatus, 4000);
 
     return () => {
       cancelled = true;
@@ -88,9 +72,9 @@ export default function ExamDetailPage() {
     if (!exam?.file_id) return;
     setRetrying(true);
     try {
-      await questionService.generate(
+      await questionGenerateService(
         { file_id: exam.file_id, count: 10, types: ["mcq", "short_answer"] },
-        { skipGlobalSignOut: true }
+        { skipGlobalSignOut: true },
       );
       setGenerationStatus("pending");
       setGenerationError(null);
@@ -146,129 +130,19 @@ export default function ExamDetailPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-sand-border p-4">
-          <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
-            <Users size={14} /> Students
-          </div>
-          <p className="text-2xl font-semibold text-espresso">{exam.students?.length || 0}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-sand-border p-4">
-          <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
-            <Clock size={14} /> Duration
-          </div>
-          <p className="text-2xl font-semibold text-espresso">{exam.duration_minutes} min</p>
-        </div>
-        <div className="bg-white rounded-xl border border-sand-border p-4">
-          <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
-            <FileText size={14} /> Questions
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl font-semibold text-espresso">{exam.question_count || "--"}</p>
-            {exam.question_count > 0 && (
-              <Link
-                href={`/instructor/exams/${exam.id}/questions`}
-                className="text-xs font-medium text-forest hover:underline no-underline"
-              >
-                View
-              </Link>
-            )}
-            {generationStatus === "pending" || generationStatus === "processing" ? (
-              <Loader2 size={16} className="animate-spin text-forest" />
-            ) : generationStatus === "failed" ? (
-              <span className="text-xs text-red-500 font-medium">failed</span>
-            ) : generationStatus === "completed" && generationError ? (
-              <span className="text-xs text-amber-600 font-medium">partial</span>
-            ) : null}
-          </div>
-          {generationStatus === "pending" || generationStatus === "processing" ? (
-            <p className="text-xs text-bark mt-1">Generating questions...</p>
-          ) : generationStatus === "failed" ? (
-            <div className="mt-2">
-              <p className="text-xs text-red-500 mb-1">{generationError || "Generation failed"}</p>
-              <button
-                onClick={handleRetry}
-                disabled={retrying}
-                className="text-xs font-medium text-forest hover:underline disabled:opacity-50 cursor-pointer bg-transparent border-0 p-0"
-              >
-                {retrying ? "Retrying..." : "Retry"}
-              </button>
-            </div>
-          ) : generationStatus === "completed" && generationError ? (
-            <div className="mt-2">
-              <p className="text-xs text-amber-600">{generationError}</p>
-              <button
-                onClick={handleRetry}
-                disabled={retrying}
-                className="text-xs font-medium text-forest hover:underline disabled:opacity-50 cursor-pointer bg-transparent border-0 p-0"
-              >
-                {retrying ? "Retrying..." : "Retry to generate remaining questions"}
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      <ExamStats
+        exam={exam}
+        generationStatus={generationStatus}
+        generationError={generationError}
+        retrying={retrying}
+        onRetry={handleRetry}
+      />
 
       <div className="mb-6">
         <RosterPanel examId={exam.id} />
       </div>
 
-      {(!exam.students || exam.students.length === 0) ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-sand-border">
-          <Users size={32} className="mx-auto text-sand mb-3" />
-          <h3 className="text-base font-medium text-espresso mb-1">No students yet</h3>
-          <p className="text-sm text-bark">Share the PIN with your students to let them join.</p>
-        </div>
-      ) : (
-        <div>
-          <h2 className="text-base font-semibold text-espresso mb-3">Students ({exam.students.length})</h2>
-          <div className="space-y-3">
-            {exam.students.map((s: StudentAttempt) => (
-              <div key={s.attempt_id} className="bg-white rounded-xl border border-sand-border p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-semibold text-espresso">{s.student_name}</p>
-                    <p className="text-xs text-bark">{s.student_email}</p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${
-                      s.status === "graded" ? "bg-green-100 text-green-700" :
-                      s.status === "submitted" ? "bg-blue-100 text-blue-700" :
-                      "bg-amber-100 text-amber-700"
-                    }`}>{s.status}</span>
-                    {s.score !== undefined && (
-                      <span className="font-semibold text-espresso">{s.score}/{s.total_marks}</span>
-                    )}
-                  </div>
-                </div>
-
-                {s.proctoring_events && s.proctoring_events.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {s.proctoring_events.map((ev, i) => {
-                      const Icon = eventIcon[ev.type] || AlertTriangle;
-                      return (
-                        <div key={i} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium ${severityColor[ev.severity] || "text-gray-600 bg-gray-50"}`}>
-                          <Icon size={10} />
-                          {ev.type.replace(/_/g, " ")}: {ev.count}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="mt-2 flex justify-end">
-                  <a
-                    href={`/dashboard/attempts/${s.attempt_id}`}
-                    className="text-xs font-medium text-forest hover:underline"
-                  >
-                    View details
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <StudentList students={exam.students ?? []} />
     </div>
   );
 }

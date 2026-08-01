@@ -1,7 +1,7 @@
 "use client"
 import { Flag, FlagOff } from "lucide-react";
 import clsx from "clsx";
-import type { Question, Answer } from "@/types/exam";
+import type { Question, Answer } from "@/types/exam-types";
 
 interface QuestionCardProps {
   question: Question;

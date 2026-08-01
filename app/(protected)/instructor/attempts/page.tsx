@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { attemptService } from "@/services/exam-service";
-import type { AttemptSummary } from "@/types/exam";
-import { ClipboardList, Clock, Check, X as XIcon } from "lucide-react";
+import { attemptListService } from "@/services/exam-service";
+import type { AttemptSummary } from "@/types/attempt-types";
+import { ClipboardList, Clock, Check } from "lucide-react";
 import Link from "next/link";
 
 const statusBadge: Record<string, string> = {
@@ -17,7 +17,7 @@ export default function AttemptsListPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    attemptService.list().then(setAttempts).catch(() => {}).finally(() => setLoading(false));
+    attemptListService().then(setAttempts).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   return (

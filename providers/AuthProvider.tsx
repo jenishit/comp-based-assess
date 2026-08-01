@@ -1,16 +1,16 @@
 "use client"
 import { setAuthToken } from '@/axios/instance';
 import { getMe } from '@/services/auth-service';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/stores/user-store';
 import { signOut, useSession } from 'next-auth/react';
 import React, { useEffect } from 'react'
 
 interface AuthProviderProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
-export default function AuthProvider({children}:AuthProviderProps) {
-  const {data: session, status} = useSession()
+export default function AuthProvider({ children }: AuthProviderProps) {
+  const { data: session, status } = useSession()
   const { setUser, setLoading, clear } = useUserStore();
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { examService } from "@/services/exam-service";
-import type { RosterEntry } from "@/types/exam";
+import { examRosterGetService, examRosterUploadService, examRosterEntryDeleteService } from "@/services/exam-service";
+import type { RosterEntry } from "@/types/exam-types";
 import { Upload, X, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,7 +30,7 @@ export default function RosterPanel({ examId }: { examId: string }) {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    examService.getRoster(examId).then(setEntries).catch(() => {}).finally(() => setLoading(false));
+    examRosterGetService(examId).then(setEntries).catch(() => {}).finally(() => setLoading(false));
   }, [examId]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +47,7 @@ export default function RosterPanel({ examId }: { examId: string }) {
 
     setUploading(true);
     try {
-      const res = await examService.uploadRoster(examId, parsed);
+      const res = await examRosterUploadService(examId, parsed);
       setEntries(res.entries);
       toast.success(`Added ${res.added} of ${parsed.length} students (${res.total} total on roster)`);
     } catch {
@@ -60,7 +60,7 @@ export default function RosterPanel({ examId }: { examId: string }) {
   const handleDelete = async (entryId: string) => {
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
     try {
-      await examService.deleteRosterEntry(examId, entryId);
+      await examRosterEntryDeleteService(examId, entryId);
     } catch {
       toast.error("Failed to remove student — refresh to check current roster");
     }

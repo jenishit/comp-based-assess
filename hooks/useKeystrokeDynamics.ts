@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { reportProctoringEvent } from "@/lib/proctoring/report-event";
 
 interface KeystrokeEntry {
   key: string;
@@ -59,14 +60,10 @@ export function useKeystrokeDynamics({
       if (bufferRef.current.length === 0) return;
       const entries = bufferRef.current;
       bufferRef.current = [];
-      fetch(`/api/v1/attempts/${attemptId}/proctoring-events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "keystroke_batch",
-          timestamp: Date.now(),
-          metadata: { entries },
-        }),
+      reportProctoringEvent(attemptId, {
+        type: "keystroke_batch",
+        timestamp: Date.now(),
+        metadata: { entries },
       }).catch(() => { /* fire-and-forget — never block the exam */ });
     };
 

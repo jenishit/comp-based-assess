@@ -1,7 +1,7 @@
 "use client"
 import { Camera, Mic, Eye, Users, AlertTriangle, Copy, Monitor, LucideIcon } from "lucide-react";
 import clsx from "clsx";
-import type { ProctoringState } from "@/types/exam";
+import type { ProctoringState } from "@/types/proctoring-types";
 
 interface ProctorPanelProps {
   proctoringState: ProctoringState;

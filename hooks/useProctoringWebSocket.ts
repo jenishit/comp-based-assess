@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ProctoringEvent } from "@/types/exam";
+import type { ProctoringEvent } from "@/types/proctoring-types";
 
 // Next.js rewrites don't reliably proxy WebSocket upgrade requests, so this
 // connects directly to the backend origin rather than through /api/v1.

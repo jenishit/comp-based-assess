@@ -11,12 +11,11 @@ export const authConfig: NextAuthConfig = {
       id: 'credentials',
       name: 'Credentials',
       credentials: {
-         email: { label: 'Email', type: 'email' },
+        email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
 
       async authorize(credentials) {
-
         if (!credentials) return null
 
         const { email, password } = credentials as { email: string; password: string }
@@ -44,11 +43,11 @@ export const authConfig: NextAuthConfig = {
           }
 
         } catch (error) {
-            if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === 'development') {
             console.error('AUTH ERROR in credentials.authorize:', error)
           }
           return null
-          }
+        }
       },
     }),
   ],
@@ -79,7 +78,7 @@ export const authConfig: NextAuthConfig = {
         return token
       }
 
-      // Refresh the access token before it expires
+      // Token still valid — nothing to refresh yet
       if (Date.now() < (token.accessTokenExpires as number)) {
         return token
       }
@@ -115,7 +114,6 @@ export const authConfig: NextAuthConfig = {
       if (token.error === 'RefreshAccessTokenError') {
         session.error = 'RefreshAccessTokenError';
       }
-      // Attach accessToken and user_id
       session.accessToken = token.accessToken
       session.refreshToken = token.refreshToken
       session.name = token.name

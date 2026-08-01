@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { examService } from "@/services/exam-service";
-import type { ExamSummary } from "@/types/exam";
+import { examListService } from "@/services/exam-service";
+import type { ExamSummary } from "@/types/exam-types";
 import { FileText, PlusCircle, Users, Clock, Copy, Check } from "lucide-react";
 import Link from "next/link";
 
@@ -12,7 +12,7 @@ export default function ExamsListPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    examService.list().then(setExams).catch(() => {}).finally(() => setLoading(false));
+    examListService().then(setExams).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const copyPin = async (pin: string, id: string) => {

@@ -2,25 +2,24 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import type { FaceLandmarkerResult, NormalizedLandmark } from "@mediapipe/tasks-vision";
-import type { ProctoringEvent, ProctoringEventType, ProctoringState } from "@/types/exam";
+import type { ProctoringEvent, ProctoringEventType, ProctoringState } from "@/types/proctoring-types";
+import { reportProctoringEvent } from "@/lib/proctoring/report-event";
+import { createEventThrottle } from "@/lib/proctoring/create-event-throttle";
 
-// ── Narrow union types ────────────────────────────────────────────────
 type GazeDirection = ProctoringState["gazeDirection"];
 
-// ── Constants ─────────────────────────────────────────────────────────
-
-// The face_landmarker model bundle emits 478 landmarks (0–477), same layout
+// The face_landmarker model bundle emits 478 landmarks (0-477), same layout
 // FaceMesh's refineLandmarks=true produced — indices below are unchanged.
 const IDX = {
-  R_IRIS:    468, // right iris centre
-  L_IRIS:    473, // left iris centre
-  R_OUTER:    33, // right eye lateral canthus
-  R_INNER:   133, // right eye medial canthus
-  L_OUTER:   263, // left eye lateral canthus
-  L_INNER:   362, // left eye medial canthus
-  R_TOP:     159, // right upper eyelid mid
-  R_BOTTOM:  145, // right lower eyelid mid
-} as const;
+  R_IRIS: 468,
+  L_IRIS: 473,
+  R_OUTER: 33,
+  R_INNER: 133,
+  L_OUTER: 263,
+  L_INNER: 362,
+  R_TOP: 159,
+  R_BOTTOM: 145,
+};
 
 // The JS API ships via npm; the WASM binary + model asset are still fetched
 // from a CDN at runtime (not bundled) — this is normal for tasks-vision.
@@ -29,120 +28,86 @@ const MODEL_ASSET_PATH =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 const INITIAL_STATE: ProctoringState = {
-  cameraReady:      false,
-  faceCount:        0,
-  gazeAway:         false,
-  gazeDirection:    "center",
-  voiceDetected:    false,
+  cameraReady: false,
+  faceCount: 0,
+  gazeAway: false,
+  gazeDirection: "center",
+  voiceDetected: false,
   multipleSpeakers: false,
-  pasteCount:       0,
-  tabSwitches:      0,
-  windowBlurs:      0,
-  typingActive:     false,
-  error:            null,
+  pasteCount: 0,
+  tabSwitches: 0,
+  windowBlurs: 0,
+  typingActive: false,
+  error: null,
 };
 
-// ── Options ───────────────────────────────────────────────────────────
 interface UseProctoringOptions {
   attemptId: string;
   enabled?: boolean;
   onEvent?: (event: ProctoringEvent) => void;
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────
 export function useProctoringMonitor(
   videoRef: React.RefObject<HTMLVideoElement | null>,
-  options:  UseProctoringOptions,
+  options: UseProctoringOptions,
 ): ProctoringState {
   const { attemptId, enabled = true, onEvent } = options;
 
   const [state, setState] = useState<ProctoringState>(INITIAL_STATE);
 
-  // ── Infrastructure refs ────────────────────────────────────────────
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
-  const streamRef         = useRef<MediaStream | null>(null);
-  const rafRef            = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number>(0);
 
-  // ── Event-throttle map ─────────────────────────────────────────────
-  const lastFiredRef = useRef<Partial<Record<ProctoringEventType, number>>>({});
-
-  // ── Absence/gaze-away onset timestamps ────────────────────────────
-  const faceAbsentSinceRef  = useRef<number | null>(null);
-  const gazeAwaySinceRef    = useRef<number | null>(null);
-
-  // ── Behavioral counters ───────────────────────────────────────────
-  const pasteCountRef       = useRef<number>(0);
-  const tabSwitchCountRef   = useRef<number>(0);
-  const windowBlurCountRef  = useRef<number>(0);
-
-  // ── Typing state ──────────────────────────────────────────────────
-  const typingActiveRef     = useRef<boolean>(false);
-  const lastKeystrokeRef    = useRef<number>(Date.now());
-  const typingTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── Helpers ───────────────────────────────────────────────────────
+  const canFireRef = useRef(createEventThrottle<ProctoringEventType>());
+  const faceAbsentSinceRef = useRef<number | null>(null);
+  const gazeAwaySinceRef = useRef<number | null>(null);
+  const pasteCountRef = useRef(0);
+  const tabSwitchCountRef = useRef(0);
+  const windowBlurCountRef = useRef(0);
+  const typingActiveRef = useRef(false);
+  const lastKeystrokeRef = useRef(0);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Holds the latest `processFrame` so the rAF loop below can call it
+  // recursively without referencing the `useCallback`-bound identifier from
+  // within its own body.
+  const processFrameRef = useRef<() => void>(() => {});
 
   const patchState = useCallback((patch: Partial<ProctoringState>): void => {
-    setState(s => ({ ...s, ...patch }));
+    setState((s) => ({ ...s, ...patch }));
   }, []);
-
-  const canFire = useCallback(
-    (type: ProctoringEventType, minGapMs: number): boolean => {
-      const now  = Date.now();
-      const last = lastFiredRef.current[type] ?? 0;
-      if (now - last < minGapMs) return false;
-      lastFiredRef.current[type] = now;
-      return true;
-    },
-    [],
-  );
 
   const reportEvent = useCallback(
     (event: Omit<ProctoringEvent, "timestamp">): void => {
       const full: ProctoringEvent = { ...event, timestamp: Date.now() };
       onEvent?.(full);
-      fetch(`/api/v1/attempts/${attemptId}/proctoring-events`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(full),
-      }).catch(() => { /* fire-and-forget — never block the exam */ });
+      reportProctoringEvent(attemptId, full).catch(() => { /* fire-and-forget — never block the exam */ });
     },
     [attemptId, onEvent],
   );
 
-  // ── Gaze estimation from iris landmarks ───────────────────────────
-  //
-  // hRatio: 0 → iris fully toward right temple; 1 → fully toward nose
-  //          expected centre ≈ 0.50
-  // vRatio: 0 → iris at top of eye; 1 → iris at bottom
-  //          expected centre ≈ 0.50
+  // hRatio: 0 -> iris fully toward right temple; 1 -> fully toward nose (centre ~0.50)
+  // vRatio: 0 -> iris at top of eye; 1 -> iris at bottom (centre ~0.50)
   const estimateGaze = useCallback(
     (landmarks: NormalizedLandmark[]): { direction: GazeDirection; away: boolean; yaw: number; pitch: number } => {
       const fallback = { direction: "center" as GazeDirection, away: false, yaw: 0.5, pitch: 0.5 };
-
-      // Need all 478 iris landmarks
       if (landmarks.length < 478) return fallback;
 
       const get = (i: number): NormalizedLandmark => landmarks[i];
 
-      // ── Horizontal ────────────────────────────────────────────────
       const eyeWR = Math.abs(get(IDX.R_INNER).x - get(IDX.R_OUTER).x);
       const eyeWL = Math.abs(get(IDX.L_INNER).x - get(IDX.L_OUTER).x);
-      // Bail out if eye is too narrow to read (heavy squint / profile)
       if (eyeWR < 0.001 || eyeWL < 0.001) return fallback;
 
       const rH = (get(IDX.R_IRIS).x - get(IDX.R_OUTER).x) / (get(IDX.R_INNER).x - get(IDX.R_OUTER).x);
       const lH = (get(IDX.L_IRIS).x - get(IDX.L_OUTER).x) / (get(IDX.L_INNER).x - get(IDX.L_OUTER).x);
       const hRatio = (rH + lH) / 2;
 
-      // ── Vertical ──────────────────────────────────────────────────
       const eyeH = Math.abs(get(IDX.R_BOTTOM).y - get(IDX.R_TOP).y);
-      const vRatio = eyeH > 0.001
-        ? (get(IDX.R_IRIS).y - get(IDX.R_TOP).y) / eyeH
-        : 0.5;
+      const vRatio = eyeH > 0.001 ? (get(IDX.R_IRIS).y - get(IDX.R_TOP).y) / eyeH : 0.5;
 
       let direction: GazeDirection = "center";
-      if      (hRatio < 0.28) direction = "right";
+      if (hRatio < 0.28) direction = "right";
       else if (hRatio > 0.72) direction = "left";
       else if (vRatio < 0.25) direction = "up";
       else if (vRatio > 0.80) direction = "down";
@@ -152,56 +117,45 @@ export function useProctoringMonitor(
     [],
   );
 
-  // ── FaceLandmarker results handler ────────────────────────────────
   const processResults = useCallback(
     (results: FaceLandmarkerResult): void => {
       const faces = results.faceLandmarks;
       const count = faces.length;
-      const now   = Date.now();
+      const now = Date.now();
+      const canFire = canFireRef.current;
 
       patchState({ faceCount: count });
 
-      // ── face absent ────────────────────────────────────────────────
       if (count === 0) {
-        if (faceAbsentSinceRef.current === null) {
-          faceAbsentSinceRef.current = now;
-        }
+        if (faceAbsentSinceRef.current === null) faceAbsentSinceRef.current = now;
         const goneMs = now - faceAbsentSinceRef.current;
         if (goneMs > 5_000 && canFire("face_absent", 10_000)) {
-          reportEvent({
-            type:     "face_absent",
-            duration: goneMs,
-            metadata: { secondsGone: Math.round(goneMs / 1_000) },
-          });
+          reportEvent({ type: "face_absent", duration: goneMs, metadata: { secondsGone: Math.round(goneMs / 1_000) } });
         }
       } else {
         faceAbsentSinceRef.current = null;
       }
 
-      // ── multiple faces ─────────────────────────────────────────────
       if (count > 1 && canFire("multiple_faces", 8_000)) {
         reportEvent({ type: "multiple_faces", metadata: { count } });
       }
 
-      // ── gaze ───────────────────────────────────────────────────────
       if (count > 0) {
         const { direction, away, yaw, pitch } = estimateGaze(faces[0]);
         patchState({ gazeDirection: direction, gazeAway: away });
 
-        // Continuous, unconditional sample for the gazeplot's timeline —
+        // Continuous, unconditional sample for the gaze plot's timeline —
         // independent of the away/violation thresholds below.
         if (canFire("gaze_sample", 2_000)) {
           reportEvent({ type: "gaze_sample", metadata: { direction, yaw, pitch } });
         }
 
         if (away) {
-          if (gazeAwaySinceRef.current === null) {
-            gazeAwaySinceRef.current = now;
-          }
+          if (gazeAwaySinceRef.current === null) gazeAwaySinceRef.current = now;
           const awayMs = now - gazeAwaySinceRef.current;
           if (awayMs > 4_000 && canFire("gaze_away", 8_000)) {
             reportEvent({
-              type:     "gaze_away",
+              type: "gaze_away",
               duration: awayMs,
               metadata: { direction, secondsAway: Math.round(awayMs / 1_000), yaw, pitch },
             });
@@ -214,10 +168,9 @@ export function useProctoringMonitor(
         }
       }
     },
-    [patchState, canFire, reportEvent, estimateGaze],
+    [patchState, reportEvent, estimateGaze],
   );
 
-  // ── Build the FaceLandmarker instance ─────────────────────────────
   const initFaceLandmarker = useCallback(async (): Promise<void> => {
     const vision = await FilesetResolver.forVisionTasks(WASM_BASE_PATH);
     faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
@@ -229,7 +182,6 @@ export function useProctoringMonitor(
     });
   }, []);
 
-  // ── Per-frame processing loop ─────────────────────────────────────
   // detectForVideo is synchronous — no async queue-overflow guard needed
   // (unlike the old FaceMesh .send()/onResults callback API).
   const processFrame = useCallback((): void => {
@@ -243,14 +195,16 @@ export function useProctoringMonitor(
       !video.paused &&
       !video.ended
     ) {
-      const results = landmarker.detectForVideo(video, performance.now());
-      processResults(results);
+      processResults(landmarker.detectForVideo(video, performance.now()));
     }
 
-    rafRef.current = requestAnimationFrame(processFrame);
+    rafRef.current = requestAnimationFrame(() => processFrameRef.current());
   }, [videoRef, processResults]);
 
-  // ── Camera ────────────────────────────────────────────────────────
+  useEffect(() => {
+    processFrameRef.current = processFrame;
+  }, [processFrame]);
+
   const startCamera = useCallback(async (): Promise<void> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -270,18 +224,15 @@ export function useProctoringMonitor(
     }
   }, [videoRef, patchState]);
 
-  // ── Behavioral listeners ──────────────────────────────────────────
   useEffect(() => {
     if (!enabled) return;
+    const canFire = canFireRef.current;
 
     const onPaste = (e: ClipboardEvent): void => {
       pasteCountRef.current += 1;
       const charCount = e.clipboardData?.getData("text").length ?? 0;
       patchState({ pasteCount: pasteCountRef.current });
-      reportEvent({
-        type:     "paste_event",
-        metadata: { count: pasteCountRef.current, charCount },
-      });
+      reportEvent({ type: "paste_event", metadata: { count: pasteCountRef.current, charCount } });
     };
 
     const onVisibilityChange = (): void => {
@@ -310,36 +261,28 @@ export function useProctoringMonitor(
         reportEvent({ type: "typing_resumed" });
       }
 
-      if (typingTimerRef.current !== null) {
-        clearTimeout(typingTimerRef.current);
-      }
+      if (typingTimerRef.current !== null) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => {
         typingActiveRef.current = false;
         patchState({ typingActive: false });
-        reportEvent({
-          type:     "typing_stopped",
-          metadata: { idleMs: Date.now() - lastKeystrokeRef.current },
-        });
+        reportEvent({ type: "typing_stopped", metadata: { idleMs: Date.now() - lastKeystrokeRef.current } });
       }, 15_000);
     };
 
-    document.addEventListener("paste",             onPaste);
-    document.addEventListener("visibilitychange",  onVisibilityChange);
-    window.addEventListener("blur",                onWindowBlur);
-    document.addEventListener("keydown",           onKeyDown);
+    document.addEventListener("paste", onPaste);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onWindowBlur);
+    document.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.removeEventListener("paste",            onPaste);
+      document.removeEventListener("paste", onPaste);
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("blur",               onWindowBlur);
-      document.removeEventListener("keydown",          onKeyDown);
-      if (typingTimerRef.current !== null) {
-        clearTimeout(typingTimerRef.current);
-      }
+      window.removeEventListener("blur", onWindowBlur);
+      document.removeEventListener("keydown", onKeyDown);
+      if (typingTimerRef.current !== null) clearTimeout(typingTimerRef.current);
     };
-  }, [enabled, patchState, reportEvent, canFire]);
+  }, [enabled, patchState, reportEvent]);
 
-  // ── Main init: load the FaceLandmarker model + start camera ───────
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
@@ -359,12 +302,13 @@ export function useProctoringMonitor(
     return () => {
       cancelled = true;
       cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
       faceLandmarkerRef.current?.close();
       faceLandmarkerRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled]); // intentionally narrow — inner functions are stable via useCallback
+    // intentionally narrow — inner functions are stable via useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
 
   return state;
 }

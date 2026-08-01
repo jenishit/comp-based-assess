@@ -3,7 +3,7 @@
 import { ArrowRight, CircleCheck, Laptop, Loader2, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { examService } from '@/services/exam-service';
+import { examJoinService } from '@/services/exam-service';
 import { toast } from 'sonner';
 
 interface StudentModalProps {
@@ -54,7 +54,7 @@ export default function StudentModal({ onClose }: StudentModalProps) {
     if (step === 2 && isDetailsComplete) {
       setJoining(true);
       try {
-        const res = await examService.join({ pin: pin.join(''), name, email });
+        const res = await examJoinService({ pin: pin.join(''), name, email });
         if (res.success) {
           setAttemptId(res.data.attempt_id);
           setStep(3);
@@ -173,7 +173,7 @@ export default function StudentModal({ onClose }: StudentModalProps) {
               <Laptop className="w-3.5 h-3.5 text-tan mt-0.5 shrink-0" />
               <span className="text-xs text-brown leading-relaxed">
                 Browser and device info will be collected for exam integrity. Your camera will be requested when the session starts.
-              </span>
+              </span>              
             </div>
             <button
               onClick={handleNextStep}

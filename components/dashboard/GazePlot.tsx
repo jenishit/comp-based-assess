@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import type { GazeSample } from "@/types/exam";
+import type { GazeSample } from "@/types/proctoring-types";
 
 interface GazePlotProps {
   samples: GazeSample[];

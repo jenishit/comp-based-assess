@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/stores/user-store";
 import { useSession } from "next-auth/react";
 import { FileText, Users, Clock, Activity, Key, Upload, ClipboardList, PlusCircle, Settings } from "lucide-react";
 import Link from "next/link";

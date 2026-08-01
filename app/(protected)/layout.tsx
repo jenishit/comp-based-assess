@@ -1,10 +1,10 @@
 "use client";
 
 import AuthProvider from "@/providers/AuthProvider";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/stores/user-store";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -41,8 +41,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, loading } = useUserStore();
+  const { user } = useUserStore();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -139,7 +138,7 @@ export default function DashboardLayout({
               <div className="w-9 h-9 rounded-full bg-forest flex items-center justify-center text-white text-sm font-semibold shrink-0">
                 {user.name
                   ?.split(" ")
-                  .map((n) => n[0])
+                  .map((n: string) => n[0])
                   .join("")
                   .toUpperCase()
                   .slice(0, 2)}

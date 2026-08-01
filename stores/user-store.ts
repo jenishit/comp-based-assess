@@ -1,6 +1,6 @@
-import { AuthUser } from "@/types/auth-types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { AuthUser } from "@/types/auth-types";
 
 export interface UserState {
   user: AuthUser | null;
@@ -35,9 +35,7 @@ export const useUserStore = create<UserState>()(
 
       clear: () => set({ user: null, loading: false }, false, "clear"),
 
-      //Selectors
       isAuthenticated: () => get().user !== null,
-
       getUserId: () => get().user?.id,
     }),
     { name: "UserStore" },
