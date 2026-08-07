@@ -30,6 +30,7 @@ export interface AttemptExam {
   title: string;
   subject?: string;
   duration_minutes: number;
+  require_seb?: boolean;
 }
 
 export const examCreateService = async (payload: CreateExamPayload): Promise<ExamDetail> => {

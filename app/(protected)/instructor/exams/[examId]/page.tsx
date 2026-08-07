@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { examGetService, questionGenerateService, questionGenerationStatusGetService } from "@/services/exam-service";
 import type { ExamDetail, QuestionJob } from "@/types/exam-types";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import RosterPanel from "./_components/RosterPanel";
 import ExamStats from "./_components/ExamStats";
@@ -124,6 +124,11 @@ export default function ExamDetailPage() {
               "bg-amber-100 text-amber-700"
             }`}>{exam.status}</span>
             <AvailabilityBadge window={exam} />
+            {exam.require_seb && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-forest/10 text-forest">
+                <ShieldCheck size={11} /> SEB required
+              </span>
+            )}
           </div>
           <p className="text-bark text-sm mt-1">{exam.subject}</p>
         </div>

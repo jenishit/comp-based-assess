@@ -15,6 +15,8 @@ export const newExamSchema = z
     available_until_date: z.string().optional(),
     daily_open_time: z.string().optional(),
     daily_close_time: z.string().optional(),
+    // Require Safe Exam Browser for this exam (high-stakes lockdown).
+    require_seb: z.boolean().optional(),
   })
   .refine(
     (data) => {

@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Send, Loader2, ArrowRight } from "lucide-react";
+import { Send, Loader2, ArrowRight, ShieldAlert } from "lucide-react";
 import { useProctoringMonitor } from "@/hooks/useProctoringMonitor";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 import { useExamSecurity } from "@/hooks/useExamSecurity";
@@ -14,6 +14,7 @@ import { useProctoringEventBatcher } from "@/hooks/useProctoringEventBatcher";
 import { useEnvironmentCheck } from "@/hooks/useEnvironmentCheck";
 import { useObjectDetection } from "@/hooks/useObjectDetection";
 import { useEvidenceCapturer } from "@/hooks/useEvidenceCapturer";
+import { isSafeExamBrowser } from "@/lib/proctoring/environment-check";
 import type { ProctoringEvent } from "@/types/proctoring-types";
 import ExamHeader from "../_components/ExamHeader";
 import ExamNavFooter from "../_components/ExamNavFooter";
@@ -55,7 +56,14 @@ function ExamPageContent() {
     handleSubmit,
   } = useExamAttempt({ attemptId, pin });
 
-  const active = !submitted && !loading;
+  // Belt-and-suspenders SEB gate: the backend already refuses a non-SEB join
+  // for require_seb exams, but the attempt URL could be reopened outside SEB
+  // afterwards. Short-circuit keeps isSafeExamBrowser() (which reads
+  // navigator) off the SSR path — exam is null there, so requireSeb is false.
+  const sebBlocked = (exam?.requireSeb ?? false) && !isSafeExamBrowser();
+
+  // Camera, monitors, and the attempt itself must not start while blocked.
+  const active = !submitted && !loading && !sebBlocked;
 
   // Telemetry from all monitors is buffered locally and flushed as one
   // batched request every 5s (only when something was actually collected)
@@ -115,6 +123,23 @@ function ExamPageContent() {
         <p className="text-[#9C96A8] text-[15px] text-center max-w-sm">
           {loadError ?? "Exam not found."}
         </p>
+      </div>
+    );
+  }
+
+  if (sebBlocked) {
+    return (
+      <div className="min-h-screen bg-espresso flex items-center justify-center px-6">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={28} className="text-red-400" aria-hidden="true" />
+          </div>
+          <h2 className="text-2xl font-medium text-white mb-2">Safe Exam Browser required</h2>
+          <p className="text-[#9C96A8] text-[15px] leading-relaxed">
+            This exam must be taken in Safe Exam Browser. Open the exam link inside SEB —
+            an ordinary browser can’t be used for it.
+          </p>
+        </div>
       </div>
     );
   }

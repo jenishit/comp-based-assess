@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Controller, UseFormReturn } from "react-hook-form";
-import { FileText, ArrowRight, Check, CalendarClock } from "lucide-react";
+import { FileText, ArrowRight, Check, CalendarClock, ShieldCheck } from "lucide-react";
 import { Field, FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { subjectListService, groupListService } from "@/services/academic-service";
@@ -273,6 +273,31 @@ export default function DetailsStep({ file, form, creating, onSubmit, onBack }: 
             />
           </div>
         )}
+      </div>
+
+      <div className="border-t border-sand-border pt-4">
+        <Controller
+          name="require_seb"
+          control={form.control}
+          render={({ field }) => (
+            <>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={Boolean(field.value)}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="w-4 h-4 accent-forest"
+                />
+                <ShieldCheck size={16} className="text-forest" />
+                <span className="text-sm font-medium text-espresso">Require Safe Exam Browser</span>
+              </label>
+              <p className="text-xs text-bark mt-1 ml-6">
+                For high-stakes exams. Students must open the exam in Safe Exam Browser — an ordinary
+                browser is refused at join. Leave off unless your students have SEB installed and configured.
+              </p>
+            </>
+          )}
+        />
       </div>
 
       <div className="flex gap-3 pt-2">

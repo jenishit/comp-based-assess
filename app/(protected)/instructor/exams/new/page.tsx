@@ -37,6 +37,7 @@ export default function CreateExamPage() {
       available_until_date: "",
       daily_open_time: "",
       daily_close_time: "",
+      require_seb: false,
     },
   });
 
@@ -79,6 +80,7 @@ export default function CreateExamPage() {
         available_until_date: data.available_until_date || undefined,
         daily_open_time: data.daily_open_time || undefined,
         daily_close_time: data.daily_close_time || undefined,
+        require_seb: data.require_seb ?? false,
       });
 
       if (fileId) {

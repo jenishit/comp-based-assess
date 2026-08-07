@@ -28,6 +28,7 @@ export interface ExamSession {
   questions: Question[];
   studentName: string;
   studentEmail: string;
+  requireSeb: boolean;
 }
 
 // Recurring-daily availability window state, evaluated server-side (server
@@ -70,6 +71,7 @@ export interface ExamDetail extends AvailabilityWindow {
   created_at: string;
   question_count: number;
   students: StudentAttempt[];
+  require_seb?: boolean;
 }
 
 export interface StudentAttempt {
@@ -99,6 +101,7 @@ export interface CreateExamPayload {
   available_until_date?: string;
   daily_open_time?: string;
   daily_close_time?: string;
+  require_seb?: boolean;
 }
 
 // Shape of the 403 error body for a join blocked by the availability window

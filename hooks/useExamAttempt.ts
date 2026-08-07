@@ -13,7 +13,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
   const router = useRouter();
 
   const [examMeta, setExamMeta] = useState<{
-    exam_id: string; title: string; subject?: string; duration_minutes: number;
+    exam_id: string; title: string; subject?: string; duration_minutes: number; require_seb?: boolean;
   } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +72,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
       questions,
       studentName: "",
       studentEmail: "",
+      requireSeb: examMeta.require_seb ?? false,
     };
   }, [examMeta, questions, pin]);
 
