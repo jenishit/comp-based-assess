@@ -161,11 +161,13 @@
       <li><a href="#nfr">3.1.1(ii) Non-Functional Requirements</a></li>
       <li><a href="#feas">3.1.2 Feasibility Analysis</a></li>
       <li><a href="#c4">4. System Design</a></li>
+      <li><a href="#usecase">Use Case Diagram</a></li>
       <li><a href="#class">Class Diagram</a></li>
       <li><a href="#object">Object Diagram</a></li>
-      <li><a href="#seq">Sequence Diagram</a></li>
-      <li><a href="#state">State Diagram</a></li>
-      <li><a href="#activity">Activity Diagram</a></li>
+      <li><a href="#er">ER Diagram</a></li>
+      <li><a href="#seq">Sequence Diagrams (×4)</a></li>
+      <li><a href="#state">State Diagrams (×4)</a></li>
+      <li><a href="#activity">Activity Diagrams (×2)</a></li>
       <li><a href="#component">Component Diagram</a></li>
       <li><a href="#deploy">Deployment Diagram</a></li>
       <li><a href="#algo">Algorithm Details</a></li>
@@ -268,7 +270,50 @@
 
   <!-- ================= CHAPTER 4 ================= -->
   <h2 id="c4">Chapter 4 · System Design</h2>
-  <p>The design is expressed through the standard UML views below. Structural views (class, object, component, deployment) show what the system is made of and where it runs; behavioural views (sequence, state, activity) show how it behaves during a proctored attempt. Each diagram is followed by a PlantUML source block for reproduction in StarUML.</p>
+  <p>The design is expressed through the standard UML views below, covering both actor types — the <strong>teacher</strong> (examiner) and the <strong>student</strong> (candidate). Structural views (use-case, class, object, component, deployment) show what the system is made of and where it runs; behavioural views (sequence, state, activity) show how it behaves. Diagrams are grouped by type; PlantUML sources for the structural diagrams accompany them, and the full set is provided in <code>diagrams.puml</code>.</p>
+
+  <h3 id="usecase">Use Case Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart LR
+  T([Teacher])
+  S([Student])
+  subgraph SYS[CBA System]
+    UC1((Register / Login))
+    UC2((Author exam))
+    UC3((Upload course PDF))
+    UC4((Generate questions with AI))
+    UC5((Manage roster / groups))
+    UC6((Configure SEB / schedule))
+    UC7((Invigilate live))
+    UC8((Review / override grades))
+    UC9((View reports and evidence))
+    UC10((Join exam by PIN))
+    UC11((Enrol face))
+    UC12((Take proctored exam))
+    UC13((Submit answers))
+    UC14((View own result))
+  end
+  T --- UC1
+  T --- UC2
+  T --- UC3
+  T --- UC4
+  T --- UC5
+  T --- UC6
+  T --- UC7
+  T --- UC8
+  T --- UC9
+  S --- UC1
+  S --- UC10
+  S --- UC11
+  S --- UC12
+  S --- UC13
+  S --- UC14
+</pre>
+    </div>
+    <figcaption><b>Figure 4.1</b> — Use cases for both actors. The teacher authors and invigilates; the student joins, enrols and sits the exam. Registration/login is shared. Grading is a system responsibility triggered on submission.</figcaption>
+  </figure>
 
   <h3 id="class">Class Diagram</h3>
   <figure>
@@ -363,7 +408,7 @@ classDiagram
   Question "1" --> "0..*" Answer : answered
 </pre>
     </div>
-    <figcaption><b>Figure 4.1</b> — Domain model. <code>ExamAttempt</code> is the aggregate root of a sitting: it owns the answers, the proctoring event stream, evidence snapshots and ML reviews.</figcaption>
+    <figcaption><b>Figure 4.2</b> — Domain model. <code>ExamAttempt</code> is the aggregate root of a sitting: it owns the answers, the proctoring event stream, evidence snapshots and ML reviews.</figcaption>
   </figure>
   <details><summary>PlantUML source (for StarUML)</summary><pre>@startuml
 class User { id; name; email; password_hash; role; login(); change_password() }
@@ -396,41 +441,166 @@ Question "1" --> "0..*" Answer
     <div class="scroll">
 <pre class="mermaid">
 classDiagram
-  class u["candidate : User"] {
-    role = STUDENT
-    email = 022...@sxc.edu.np
+  class t["dr_sharma : User"] {
+    role = TEACHER
+  }
+  class subj["OOP : Subject"] {
+    name = Object-Oriented Programming
+  }
+  class grp["BScIT-6 : Group"] {
+    term = Spring 2026
   }
   class ex["midterm : Exam"] {
     exam_code = 7KQ2P9
     require_seb = true
-    timer_minutes = 60
+  }
+  class q1["q1 : Question"] {
+    type = MCQ
+    marks = 1
+  }
+  class q2["q2 : Question"] {
+    type = SHORT
+    marks = 5
+  }
+  class ros["entry#3 : ExamRosterEntry"] {
+    email = 022...@sxc.edu.np
+  }
+  class s["candidate : User"] {
+    role = STUDENT
+  }
+  class fe["enrol#5 : FaceEnrollment"] {
+    model_version = human-faceres-v1
   }
   class at["sitting#42 : ExamAttempt"] {
     status = IN_PROGRESS
-    total_score = null
   }
-  class e1["ev#918 : ProctoringEvent"] {
+  class a1["ans#1 : Answer"] {
+    selected_option = B
+  }
+  class ev["ev#918 : ProctoringEvent"] {
     type = phone_detected
-    severity = high
-  }
-  class e2["ev#919 : ProctoringEvent"] {
-    type = gaze_away
-    severity = low
   }
   class sn["snap#7 : EvidenceCapture"] {
     event_type = phone_detected
   }
-  u --> at : takes
+  class mr["mlr#2 : MLReview"] {
+    kind = face
+  }
+  t --> subj : owns
+  t --> grp : owns
+  t --> ex : creates
+  subj --> ex : categorises
+  grp --> ex : assigned
+  ex --> q1 : contains
+  ex --> q2 : contains
+  ex --> ros : rosters
+  s --> fe : enrolled
+  s --> at : takes
   ex --> at : has
-  at --> e1 : emitted
-  at --> e2 : emitted
-  at --> sn : captured
+  at --> a1 : records
+  at --> ev : emits
+  at --> sn : captures
+  at --> mr : reviewed
 </pre>
     </div>
-    <figcaption><b>Figure 4.2</b> — A snapshot of live objects during one sitting: a candidate's in-progress attempt on an SEB-required exam, two proctoring events, and the evidence snapshot triggered by the high-severity <code>phone_detected</code> event.</figcaption>
+    <figcaption><b>Figure 4.3</b> — A live snapshot spanning both actors: teacher <em>dr_sharma</em> owns a subject and group and has created the SEB-required <em>midterm</em>; student <em>candidate</em> has enrolled a face and is mid-attempt, with an answer, a high-severity proctoring event, its evidence snapshot, and an advisory ML review.</figcaption>
   </figure>
 
-  <h3 id="seq">Sequence Diagram</h3>
+  <h3 id="er">Entity–Relationship Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+erDiagram
+  USER ||--o{ EXAM : creates
+  USER ||--o{ EXAM_ATTEMPT : takes
+  USER ||--o| FACE_ENROLLMENT : enrols
+  SUBJECT ||--o{ EXAM : categorises
+  GROUP ||--o{ EXAM : assigned
+  EXAM ||--|{ QUESTION : contains
+  EXAM ||--o{ EXAM_ATTEMPT : has
+  EXAM ||--o{ EXAM_ROSTER_ENTRY : rosters
+  EXAM_ATTEMPT ||--o{ ANSWER : records
+  EXAM_ATTEMPT ||--o{ PROCTORING_EVENT : emits
+  EXAM_ATTEMPT ||--o{ EVIDENCE_CAPTURE : captures
+  EXAM_ATTEMPT ||--o{ ML_REVIEW : reviewed
+  QUESTION ||--o{ ANSWER : answered
+  USER {
+    uuid id PK
+    string email UK
+    string password_hash
+    enum role
+  }
+  EXAM {
+    uuid id PK
+    string exam_code UK
+    uuid creator_id FK
+    uuid subject_id FK
+    uuid group_id FK
+    bool require_seb
+    int timer_minutes
+  }
+  QUESTION {
+    uuid id PK
+    uuid exam_id FK
+    enum type
+    json options
+    string correct_option
+    int marks
+  }
+  EXAM_ATTEMPT {
+    uuid id PK
+    uuid exam_id FK
+    uuid student_id FK
+    enum status
+    float total_score
+  }
+  ANSWER {
+    uuid id PK
+    uuid attempt_id FK
+    uuid question_id FK
+    float marks_awarded
+    bool teacher_reviewed
+  }
+  PROCTORING_EVENT {
+    uuid id PK
+    uuid attempt_id FK
+    string type
+    float timestamp
+    json event_metadata
+  }
+  EVIDENCE_CAPTURE {
+    uuid id PK
+    uuid attempt_id FK
+    string event_type
+    string s3_key
+  }
+  FACE_ENROLLMENT {
+    uuid id PK
+    uuid user_id FK
+    string model_version
+  }
+  ML_REVIEW {
+    uuid id PK
+    uuid attempt_id FK
+    string kind
+    json result
+  }
+  EXAM_ROSTER_ENTRY {
+    uuid id PK
+    uuid exam_id FK
+    string email
+  }
+  SUBJECT { uuid id PK  string name }
+  GROUP { uuid id PK  string name  string term }
+</pre>
+    </div>
+    <figcaption><b>Figure 4.4</b> — Relational schema with primary and foreign keys. Every proctoring artefact (events, evidence, ML reviews) hangs off <code>EXAM_ATTEMPT</code> via <code>attempt_id</code>; a partial (0..1) relationship links a user to at most one face enrolment.</figcaption>
+  </figure>
+
+  <h3 id="seq">Sequence Diagrams</h3>
+  <p>Four interaction scenarios span both roles: the student sitting an exam, the teacher authoring one, the teacher invigilating live, and the shared authentication / token-refresh path that underpins every request.</p>
+
+  <h4>Student — join and sit a proctored exam</h4>
   <figure>
     <div class="scroll">
 <pre class="mermaid">
@@ -463,10 +633,116 @@ sequenceDiagram
   API->>API: enqueue grade_attempt_task (Celery)
 </pre>
     </div>
-    <figcaption><b>Figure 4.3</b> — Join → proctored sitting → submit. All computer-vision inference happens on the student's device; the server persists events, fans them out to the invigilator, and enqueues grading.</figcaption>
+    <figcaption><b>Figure 4.5</b> — <b>Student.</b> Join → proctored sitting → submit. All computer-vision inference happens on the student's device; the server persists events, fans them out to the invigilator, and enqueues grading.</figcaption>
   </figure>
 
-  <h3 id="state">State Diagram</h3>
+  <h4>Teacher — exam authoring and AI question generation</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor T as Teacher Browser
+  participant PX as Next.js Proxy
+  participant API as FastAPI
+  participant S3 as MinIO
+  participant Q as Celery Queue
+  participant W as Question Worker
+  participant G as Gemini API
+  participant DB as PostgreSQL
+  T->>API: GET /files/presigned-upload
+  API-->>T: presigned POST (10 MB policy)
+  T->>S3: POST course PDF (direct)
+  T->>PX: POST /exams (title, params, require_seb)
+  PX->>API: forward + Authorization
+  API->>DB: insert Exam (unique PIN)
+  API-->>T: exam_id, PIN
+  T->>PX: POST /questions/generate (file_id)
+  PX->>API: forward
+  API->>Q: enqueue generate task
+  API-->>T: job_id
+  W->>S3: fetch PDF
+  W->>G: prompt: generate MCQ + short-answer
+  G-->>W: structured questions
+  W->>DB: insert Questions
+  loop poll every 4s
+    T->>API: GET generation-status
+    API-->>T: pending / completed
+  end
+</pre>
+    </div>
+    <figcaption><b>Figure 4.6</b> — <b>Teacher.</b> The PDF uploads straight to object storage under a size-capped presigned policy; question generation runs asynchronously on a Celery worker calling Gemini, and the browser polls for completion.</figcaption>
+  </figure>
+
+  <h4>Teacher — live invigilation and grade review</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor I as Instructor Browser
+  participant PX as Next.js Proxy
+  participant API as FastAPI
+  participant R as Redis
+  participant WS as WS Manager
+  participant DB as PostgreSQL
+  I->>PX: POST /ws/ticket (exam_id)
+  PX->>API: forward + Authorization
+  API->>API: verify teacher owns exam
+  API->>R: SET ws_ticket (60s, single-use)
+  API-->>I: ticket
+  I->>WS: connect /ws/exams/{id}?ticket
+  WS->>R: GETDEL ticket (validate)
+  WS-->>I: subscribed
+  Note over WS,I: live student events arrive
+  WS-->>I: proctoring_event / attempt_status
+  I->>PX: GET /attempts/{id}/evidence
+  PX->>API: forward
+  API->>DB: fetch captures
+  API-->>I: presigned image URLs
+  I->>PX: PATCH review (override a mark)
+  PX->>API: forward
+  API->>DB: update Answer, recompute total
+  API-->>I: updated score
+</pre>
+    </div>
+    <figcaption><b>Figure 4.7</b> — <b>Teacher.</b> A single-use ticket authorises the WebSocket (which cannot carry an auth header); events stream live to the roster, and the teacher inspects evidence and overrides grades over the authenticated proxy.</figcaption>
+  </figure>
+
+  <h4>Both roles — authentication and transparent token refresh</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor U as User Browser
+  participant PX as /api/backend Proxy
+  participant NA as NextAuth Cookie
+  participant API as FastAPI
+  participant R as Redis
+  U->>API: POST /auth/login (email, password)
+  API->>R: rate-limit check
+  API-->>U: access (60 min) + refresh (rotating)
+  Note over U,NA: tokens held in encrypted httpOnly cookie
+  U->>PX: API request (cookie only)
+  PX->>NA: decrypt session
+  alt access token valid
+    PX->>API: request + Bearer access
+  else access token expired
+    PX->>API: POST /auth/refresh (refresh token)
+    API->>R: check jti not revoked, then rotate
+    API-->>PX: new access + refresh
+    PX->>PX: re-encode session cookie
+    PX->>API: retry + new Bearer
+  end
+  API-->>PX: response
+  PX-->>U: response (token never seen by page JS)
+</pre>
+    </div>
+    <figcaption><b>Figure 4.8</b> — <b>Both actors.</b> Every authenticated request flows through the server-side proxy, which decrypts the cookie, refreshes an expired access token by rotating the refresh token, and forwards with a bearer header — so no backend token is ever exposed to client JavaScript.</figcaption>
+  </figure>
+
+  <h3 id="state">State Diagrams</h3>
+  <p>The system contains four independent state machines worth modelling: the attempt lifecycle a student drives, the asynchronous question-generation job, the per-answer review path (including the teacher override), and the live WebSocket connection.</p>
+
+  <h4>Exam attempt lifecycle</h4>
   <figure>
     <div class="scroll">
 <pre class="mermaid">
@@ -486,10 +762,70 @@ stateDiagram-v2
   Graded --> [*]
 </pre>
     </div>
-    <figcaption><b>Figure 4.4</b> — Lifecycle of an <code>ExamAttempt</code>. The nested region shows the three-strike proctoring sub-machine that governs the <code>InProgress</code> state.</figcaption>
+    <figcaption><b>Figure 4.9</b> — Lifecycle of an <code>ExamAttempt</code>. The nested region shows the three-strike proctoring sub-machine that governs the <code>InProgress</code> state.</figcaption>
   </figure>
 
-  <h3 id="activity">Activity Diagram</h3>
+  <h4>Question-generation job (Celery)</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Pending : task enqueued
+  Pending --> Processing : worker picks up
+  Processing --> Completed : questions saved
+  Processing --> Failed : Gemini / parse error
+  Failed --> Retrying : attempts &lt; 3
+  Retrying --> Processing : exponential backoff
+  Failed --> [*] : retries exhausted
+  Completed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.10</b> — The asynchronous AI question-generation (and grading) task. Failures retry up to three times with exponential backoff before surfacing to the teacher for a manual retry.</figcaption>
+  </figure>
+
+  <h4>Answer review (human-in-the-loop)</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Unanswered
+  Unanswered --> Saved : autosave (600ms debounce)
+  Saved --> Saved : edit again
+  Saved --> Submitted : attempt submitted
+  Unanswered --> Submitted : left blank
+  Submitted --> AIGraded : MCQ match / LLM score
+  AIGraded --> TeacherReviewed : teacher overrides
+  AIGraded --> [*] : accepted as-is
+  TeacherReviewed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.11</b> — An individual answer's states, from debounced autosave through automatic grading to the optional teacher override that marks it <code>teacher_reviewed</code> and recomputes the total.</figcaption>
+  </figure>
+
+  <h4>Live WebSocket connection</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> MintingTicket
+  MintingTicket --> Connecting : ticket issued
+  MintingTicket --> Backoff : mint failed
+  Connecting --> Open : handshake + ticket valid
+  Connecting --> Backoff : rejected (4401) / error
+  Open --> Open : ping / pong every 25s
+  Open --> Backoff : connection dropped
+  Backoff --> MintingTicket : retry (exp backoff, max 30s)
+  Open --> Closed : page unmount
+  Closed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.12</b> — The invigilator's live channel. Each connection begins by minting a single-use ticket; drops trigger a fresh ticket and exponential-backoff reconnect, and a heartbeat keeps half-dead sockets from lingering.</figcaption>
+  </figure>
+
+  <h3 id="activity">Activity Diagrams</h3>
+  <p>The two actors follow distinct workflows: the student's proctored sitting and the teacher's authoring-to-review cycle.</p>
+
+  <h4>Student activity</h4>
   <figure>
     <div class="scroll">
 <pre class="mermaid">
@@ -517,7 +853,37 @@ flowchart TD
   K --> P
 </pre>
     </div>
-    <figcaption><b>Figure 4.5</b> — End-to-end candidate activity, including the SEB gate, one-time enrolment, the continuous monitor loop with the three-strike branch, and grading.</figcaption>
+    <figcaption><b>Figure 4.13</b> — <b>Student.</b> End-to-end candidate activity, including the SEB gate, one-time enrolment, the continuous monitor loop with the three-strike branch, and grading.</figcaption>
+  </figure>
+
+  <h4>Teacher activity</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart TD
+  A([Teacher: New Exam]) --> B[Create or pick subject and group]
+  B --> C[Upload course PDF]
+  C --> D{PDF valid and under 10 MB?}
+  D -->|no| C
+  D -->|yes| E[Set title, duration, question count]
+  E --> F{Schedule window?}
+  F -->|yes| G[Set dates and daily times]
+  F -->|no| H
+  G --> H{Require SEB?}
+  H -->|yes| I[Enable SEB gate]
+  H -->|no| J
+  I --> J[Create exam and receive PIN]
+  J --> K[AI generates questions - async]
+  K --> L{Generation done?}
+  L -->|failed| M[Retry generation]
+  M --> L
+  L -->|completed| N[Review and edit questions]
+  N --> O[Share PIN with students]
+  O --> P[Monitor live dashboard]
+  P --> Q([Review and override grades])
+</pre>
+    </div>
+    <figcaption><b>Figure 4.14</b> — <b>Teacher.</b> The authoring-to-invigilation cycle: prepare material, generate and review questions, configure the gate and schedule, publish, then monitor live and review grades.</figcaption>
   </figure>
 
   <h3 id="component">Component Diagram</h3>
@@ -558,7 +924,7 @@ flowchart LR
   WK --> PG
 </pre>
     </div>
-    <figcaption><b>Figure 4.6</b> — Components and their interfaces. Authenticated traffic passes through the Next.js proxy (which injects the token server-side); capability-based exam traffic reaches the routers directly.</figcaption>
+    <figcaption><b>Figure 4.15</b> — Components and their interfaces. Authenticated traffic passes through the Next.js proxy (which injects the token server-side); capability-based exam traffic reaches the routers directly.</figcaption>
   </figure>
 
   <h3 id="deploy">Deployment Diagram</h3>
@@ -591,7 +957,7 @@ flowchart TB
   C -->|HTTPS| EX
 </pre>
     </div>
-    <figcaption><b>Figure 4.7</b> — Physical deployment. Vision/audio inference executes on the candidate device; the application server hosts the web, API and worker processes; data services and the LLM are reached over TCP/HTTPS.</figcaption>
+    <figcaption><b>Figure 4.16</b> — Physical deployment. Vision/audio inference executes on the candidate device; the application server hosts the web, API and worker processes; data services and the LLM are reached over TCP/HTTPS.</figcaption>
   </figure>
 
   <!-- ================= ALGORITHMS ================= -->
