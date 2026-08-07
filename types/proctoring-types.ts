@@ -14,7 +14,8 @@ export type ProctoringEventType =
   | "pointer_lock_exit"
   | "session_terminated"
   | "keystroke_batch"
-  | "gaze_sample";
+  | "gaze_sample"
+  | "devtools_opened";
 
 export interface ProctoringEvent {
   type: ProctoringEventType;

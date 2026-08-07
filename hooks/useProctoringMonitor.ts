@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import type { FaceLandmarkerResult, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import type { ProctoringEvent, ProctoringEventType, ProctoringState } from "@/types/proctoring-types";
-import { reportProctoringEvent } from "@/lib/proctoring/report-event";
 import { createEventThrottle } from "@/lib/proctoring/create-event-throttle";
 
 type GazeDirection = ProctoringState["gazeDirection"];
@@ -44,14 +43,17 @@ const INITIAL_STATE: ProctoringState = {
 interface UseProctoringOptions {
   attemptId: string;
   enabled?: boolean;
-  onEvent?: (event: ProctoringEvent) => void;
+  /** Sink for every proctoring event this hook produces — wire this to the
+   * shared event batcher (see useProctoringEventBatcher) rather than posting
+   * per-event. */
+  onEvent: (event: ProctoringEvent) => void;
 }
 
 export function useProctoringMonitor(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   options: UseProctoringOptions,
 ): ProctoringState {
-  const { attemptId, enabled = true, onEvent } = options;
+  const { enabled = true, onEvent } = options;
 
   const [state, setState] = useState<ProctoringState>(INITIAL_STATE);
 
@@ -79,11 +81,9 @@ export function useProctoringMonitor(
 
   const reportEvent = useCallback(
     (event: Omit<ProctoringEvent, "timestamp">): void => {
-      const full: ProctoringEvent = { ...event, timestamp: Date.now() };
-      onEvent?.(full);
-      reportProctoringEvent(attemptId, full).catch(() => { /* fire-and-forget — never block the exam */ });
+      onEvent({ ...event, timestamp: Date.now() });
     },
-    [attemptId, onEvent],
+    [onEvent],
   );
 
   // hRatio: 0 -> iris fully toward right temple; 1 -> fully toward nose (centre ~0.50)
@@ -161,7 +161,7 @@ export function useProctoringMonitor(
             });
           }
         } else {
-          if (gazeAwaySinceRef.current !== null) {
+          if (gazeAwaySinceRef.current !== null && canFire("gaze_returned", 3_000)) {
             reportEvent({ type: "gaze_returned", metadata: { yaw, pitch } });
           }
           gazeAwaySinceRef.current = null;
@@ -182,6 +182,13 @@ export function useProctoringMonitor(
     });
   }, []);
 
+  // detectForVideo requires a strictly increasing timestamp on each call to
+  // the same landmarker instance (VIDEO running mode) — a non-advancing or
+  // out-of-order tick (e.g. during React StrictMode's dev-only double-invoke
+  // of the mount effect below, or a rAF callback still in flight right as
+  // the instance is torn down) throws and would otherwise crash the loop.
+  const lastDetectTimestampRef = useRef(0);
+
   // detectForVideo is synchronous — no async queue-overflow guard needed
   // (unlike the old FaceMesh .send()/onResults callback API).
   const processFrame = useCallback((): void => {
@@ -195,7 +202,15 @@ export function useProctoringMonitor(
       !video.paused &&
       !video.ended
     ) {
-      processResults(landmarker.detectForVideo(video, performance.now()));
+      const now = performance.now();
+      if (now > lastDetectTimestampRef.current) {
+        lastDetectTimestampRef.current = now;
+        try {
+          processResults(landmarker.detectForVideo(video, now));
+        } catch (err) {
+          console.error("[useProctoringMonitor] detectForVideo failed:", err);
+        }
+      }
     }
 
     rafRef.current = requestAnimationFrame(() => processFrameRef.current());

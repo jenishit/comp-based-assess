@@ -67,7 +67,8 @@ const config: Config = {
         "dk-forest": "#2E5C3A",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-fraunces)", "Georgia", "serif"],
       },
       maxWidth: {
         content: "1060px",

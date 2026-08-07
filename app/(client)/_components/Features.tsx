@@ -48,34 +48,34 @@ const FEATURES = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-17 px-7 bg-sand-light">
-      <div className="max-w-content mx-auto">
+    <section id="features" className="py-19 px-7 bg-sand-light">
+      <div className="max-w-content mx-auto grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-12 lg:gap-16">
 
-        {/* Heading */}
-        <div className="text-center mb-9.5">
-          <p className="text-xs font-medium text-forest uppercase tracking-[1.2px] mb-2.5">
-            What you get
-          </p>
-          <h2 className="text-[32px] font-medium text-[#1A100A] tracking-tight m-0">
+        {/* Heading — pinned left, stays in view as the list runs down on wide screens */}
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <h2 className="font-display text-[38px] leading-[1.1] text-[#1A100A] tracking-tight m-0 text-balance">
             Built for academic integrity
           </h2>
+          <p className="text-[15px] text-bark leading-[1.7] mt-4 max-w-90">
+            Every layer of EduQuest exists to make cheating harder and grading
+            faster — from how questions are written to how sessions are watched.
+          </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FEATURES.map(({ Icon, bg, color, title, desc }) => (
+        {/* List — a continuous read, not a shelf of identical boxes */}
+        <div className="flex flex-col">
+          {FEATURES.map(({ Icon, bg, color, title, desc }, i) => (
             <div
               key={title}
-              className="bg-white rounded-xl p-5 border border-sand-border
-                         hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+              className={`flex items-start gap-5 py-6 ${i > 0 ? "border-t border-sand-border" : ""}`}
             >
-              <div className={`w-10 h-10 rounded-[10px] ${bg} flex items-center
-                               justify-content mb-3`}
-                   style={{ justifyContent: "center" }}>
-                <Icon size={20} className={color} aria-hidden="true" />
+              <div className={`w-11 h-11 rounded-full ${bg} flex items-center justify-center shrink-0`}>
+                <Icon size={19} className={color} aria-hidden="true" />
               </div>
-              <p className="font-medium text-sm text-[#1A100A] mb-1.5">{title}</p>
-              <p className="text-[12.5px] text-bark leading-[1.6] m-0">{desc}</p>
+              <div>
+                <p className="font-medium text-[15px] text-[#1A100A] mb-1">{title}</p>
+                <p className="text-[13.5px] text-bark leading-[1.65] m-0 max-w-115">{desc}</p>
+              </div>
             </div>
           ))}
         </div>

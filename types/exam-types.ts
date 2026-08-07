@@ -30,7 +30,19 @@ export interface ExamSession {
   studentEmail: string;
 }
 
-export interface ExamSummary {
+// Recurring-daily availability window state, evaluated server-side (server
+// owns "now" and the institution timezone — see exam_availability.py).
+export type AvailabilityState = "always_open" | "not_started" | "open" | "closed_today" | "ended";
+
+export interface AvailabilityWindow {
+  available_from_date?: string;
+  available_until_date?: string;
+  daily_open_time?: string;
+  daily_close_time?: string;
+  availability_state: AvailabilityState;
+}
+
+export interface ExamSummary extends AvailabilityWindow {
   id: string;
   title: string;
   subject: string;
@@ -42,10 +54,13 @@ export interface ExamSummary {
   avgScore?: number;
 }
 
-export interface ExamDetail {
+export interface ExamDetail extends AvailabilityWindow {
   id: string;
   title: string;
   subject: string;
+  subject_id?: string;
+  group_id?: string;
+  term?: string;
   description?: string;
   pin: string;
   file_id?: string;
@@ -77,6 +92,21 @@ export interface CreateExamPayload {
   timer_minutes: number;
   file_id?: string;
   mcq_count: string;
+  subject_id?: string;
+  group_id?: string;
+  term?: string;
+  available_from_date?: string;
+  available_until_date?: string;
+  daily_open_time?: string;
+  daily_close_time?: string;
+}
+
+// Shape of the 403 error body for a join blocked by the availability window
+// (see availability_error_detail in exam_availability.py). Other join
+// failures (bad PIN, not on roster) still come back as a plain string detail.
+export interface AvailabilityErrorDetail {
+  code: Exclude<AvailabilityState, "always_open" | "open">;
+  message: string;
 }
 
 export interface RosterEntry {
@@ -106,7 +136,20 @@ export interface JoinExamResponse {
     title: string;
     subject: string;
     duration_minutes: number;
+    already_enrolled: boolean;
   };
+}
+
+export interface CreatePracticeExamPayload {
+  title: string;
+  timer_minutes: number;
+  file_id?: string;
+}
+
+export interface PracticeAttempt {
+  attempt_id: string;
+  exam_id: string;
+  pin: string;
 }
 
 export interface QuestionJob {

@@ -23,7 +23,7 @@ export default function DashboardHome() {
     return (
       <div className="max-w-5xl">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-espresso tracking-tight">
+          <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">
             {loading ? "Welcome back" : `Welcome back${user?.name ? `, ${user?.name?.split(" ")[0]}` : ""}`}
           </h1>
           <p className="text-bark text-sm mt-1">Manage your exams and monitor student progress.</p>
@@ -72,7 +72,7 @@ export default function DashboardHome() {
   return (
     <div className="max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-espresso tracking-tight">
+        <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">
           {loading ? "Welcome back" : `Welcome back${user?.name ? `, ${user?.name?.split(" ")[0]}` : ""}`}
         </h1>
         <p className="text-bark text-sm mt-1">Track your assessments and upload course materials.</p>

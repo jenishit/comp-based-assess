@@ -14,9 +14,10 @@ import {
   GraduationCap,
   Menu,
   X,
-  Upload,
+  FlaskConical,
   Key,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -24,13 +25,15 @@ const teacherNav = [
   { label: "Dashboard", href: "/instructor", icon: LayoutDashboard },
   { label: "My Exams", href: "/instructor/exams", icon: FileText },
   { label: "Create Exam", href: "/instructor/exams/new", icon: PlusCircle },
+  { label: "All Attempts", href: "/instructor/attempts", icon: ClipboardList },
+  { label: "Subjects & Groups", href: "/instructor/academic", icon: BookOpen },
   { label: "Settings", href: "/instructor/settings", icon: Settings },
 ];
 
 const studentNav = [
   { label: "Dashboard", href: "/student", icon: LayoutDashboard },
   { label: "Join Exam", href: "/student/join", icon: Key },
-  { label: "Upload PDF", href: "/student/upload", icon: Upload },
+  { label: "Practice Test", href: "/student/practice", icon: FlaskConical },
   { label: "My Attempts", href: "/student/attempts", icon: ClipboardList },
   { label: "Settings", href: "/student/settings", icon: Settings },
 ];
@@ -68,7 +71,7 @@ export default function DashboardLayout({
           <div className="w-8 h-8 rounded-lg bg-forest flex items-center justify-center">
             <GraduationCap size={18} className="text-white" aria-hidden="true" />
           </div>
-          <span className="font-semibold text-lg text-white tracking-tight">
+          <span className="font-display text-lg text-white tracking-tight">
             EduQuest
           </span>
           <span className="ml-auto text-[10px] font-medium text-sand uppercase tracking-wider border border-sand/30 rounded px-1.5 py-0.5">
@@ -85,7 +88,11 @@ export default function DashboardLayout({
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href;
+            // Dashboard root ("/instructor", "/student") is a prefix of every
+            // other item's href, so it only matches exactly; every other item
+            // stays highlighted on its own nested/detail routes too.
+            const isRoot = href === "/instructor" || href === "/student";
+            const active = isRoot ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`);
             return (
               <Link
                 key={href}

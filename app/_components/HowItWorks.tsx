@@ -6,31 +6,30 @@ import { useState } from 'react';
 const STEPS = {
   instructor: [
     { icon: 'upload', t: 'Upload materials', d: 'Upload a PDF or paste text — the system reads and indexes your content.' },
-    { icon: ' target', t: 'Configure exam', d: 'Set MCQ count, short-answer count, and the exam duration.' },
-    { icon: ' brain', t: 'Review questions', d: 'AI generates scenario-based questions. Edit or approve before publishing.' },
-    { icon: ' key', t: 'Share PIN', d: 'A unique 6-digit PIN is generated. Share it or send a direct join link.' },
-    { icon: ' chart-bar', t: 'Review results', d: 'See scores, flagged events, and per-question breakdowns per student.' },
+    { icon: 'target', t: 'Configure exam', d: 'Set MCQ count, short-answer count, and the exam duration.' },
+    { icon: 'brain', t: 'Review questions', d: 'AI generates scenario-based questions. Edit or approve before publishing.' },
+    { icon: 'key', t: 'Share PIN', d: 'A unique 6-digit PIN is generated. Share it or send a direct join link.' },
+    { icon: 'chart-bar', t: 'Review results', d: 'See scores, flagged events, and per-question breakdowns per student.' },
   ],
   student: [
-    { icon: ' key', t: 'Enter PIN or link', d: 'No account required. Enter the 6-digit PIN or follow the teacher\'s link.' },
-    { icon: ' user', t: 'Provide details', d: 'Enter your name and email so the instructor can identify your submission.' },
-    { icon: ' pencil', t: 'Take the exam', d: 'Answer questions within the time limit under live monitoring.' },
-    { icon: ' award', t: 'See results', d: 'Instant score with per-question explanations of what was correct.' },
-    { icon: ' book-2', t: 'Practice anytime', d: 'Create a free account to generate practice quizzes from any document.' },
+    { icon: 'key', t: 'Enter PIN or link', d: 'No account required. Enter the 6-digit PIN or follow the teacher\'s link.' },
+    { icon: 'user', t: 'Provide details', d: 'Enter your name and email so the instructor can identify your submission.' },
+    { icon: 'pencil', t: 'Take the exam', d: 'Answer questions within the time limit under live monitoring.' },
+    { icon: 'award', t: 'See results', d: 'Instant score with per-question explanations of what was correct.' },
+    { icon: 'book', t: 'Practice anytime', d: 'Create a free account to generate practice quizzes from any document.' },
   ],
 };
 
-
 const iconMap: Record<string, React.ElementType> = {
-  ' upload': Upload,
-  ' target': Target,
-  ' brain': Brain,
-  ' key': Key,
-  ' chart-bar': ChartBar,
-  ' user': User,
-  ' pencil': Pencil,
-  ' award': Award,
-  ' book': Book,
+  upload: Upload,
+  target: Target,
+  brain: Brain,
+  key: Key,
+  'chart-bar': ChartBar,
+  user: User,
+  pencil: Pencil,
+  award: Award,
+  book: Book,
 };
 
 export default function HowItWorks() {
@@ -41,9 +40,8 @@ export default function HowItWorks() {
     <section className="py-16 px-6 md:px-8 bg-cream">
       <div className="max-w-265 mx-auto">
         <div className="text-center mb-10">
-          <p className="text-xs font-medium text-forest uppercase tracking-widest">Workflow</p>
-          <h2 className="text-3xl md:text-4xl font-medium text-dark tracking-tight mt-2">How EduQuest works</h2>
-          <p className="text-sm text-brown mt-2">End‑to‑end flows for instructors and students.</p>
+          <h2 className="font-display text-3xl md:text-4xl text-dark tracking-tight text-balance">How EduQuest works</h2>
+          <p className="text-sm text-brown mt-2.5">End‑to‑end flows for instructors and students.</p>
         </div>
 
         <div className="flex justify-center mb-10">
@@ -75,7 +73,7 @@ export default function HowItWorks() {
                 {idx < steps.length - 1 && (
                   <div className="hidden md:block absolute top-5 left-[60%] right-[-30%] h-[1.5px] bg-linear-to-r from-forest/60 to-border-lt" />
                 )}
-                <div className="w-10 h-10 rounded-full bg-forest flex items-center justify-center mx-auto mb-3 relative z-10 shadow-[0_0_0_5px_rgba(74,124,89,0.18)]">
+                <div className="w-10 h-10 rounded-full bg-forest flex items-center justify-center mx-auto mb-3 relative z-10 shadow-[0_4px_10px_-2px_rgba(46,92,58,0.45)]">
                   <Comp className="w-4 h-4 text-white" />
                 </div>
                 <p className="font-medium text-sm text-dark">{step.t}</p>

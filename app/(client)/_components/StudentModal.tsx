@@ -3,8 +3,16 @@
 import { ArrowRight, CircleCheck, Laptop, Loader2, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { examJoinService } from '@/services/exam-service';
+import dynamic from 'next/dynamic';
+import { examJoinService, enrollmentSubmitService } from '@/services/exam-service';
+import { getJoinErrorMessage } from '@/lib/join-error';
 import { toast } from 'sonner';
+
+// @vladmandic/human (imported by FaceEnrollmentStep) resolves to a Node.js
+// build during SSR that requires the native @tensorflow/tfjs-node package,
+// which isn't installed and shouldn't be — this whole pipeline is
+// browser/WASM-WebGL only. ssr: false keeps it out of the server bundle.
+const FaceEnrollmentStep = dynamic(() => import('./FaceEnrollmentStep'), { ssr: false });
 
 interface StudentModalProps {
   onClose: () => void;
@@ -18,6 +26,9 @@ export default function StudentModal({ onClose }: StudentModalProps) {
   const [email, setEmail] = useState('');
   const [joining, setJoining] = useState(false);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  // null = not yet known (before the join call resolves).
+  const [needsEnrollment, setNeedsEnrollment] = useState<boolean | null>(null);
+  const [enrollSubmitting, setEnrollSubmitting] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -57,15 +68,29 @@ export default function StudentModal({ onClose }: StudentModalProps) {
         const res = await examJoinService({ pin: pin.join(''), name, email });
         if (res.success) {
           setAttemptId(res.data.attempt_id);
+          setNeedsEnrollment(!res.data.already_enrolled);
           setStep(3);
         } else {
           toast.error(res.message || 'Failed to join exam');
         }
-      } catch {
-        toast.error('Invalid PIN or exam not found');
+      } catch (err) {
+        toast.error(getJoinErrorMessage(err));
       } finally {
         setJoining(false);
       }
+    }
+  };
+
+  const handleEnrollmentComplete = async (embeddings: number[][], modelVersion: string) => {
+    if (!attemptId) return;
+    setEnrollSubmitting(true);
+    try {
+      await enrollmentSubmitService(attemptId, { embeddings, model_version: modelVersion });
+      setStep(4);
+    } catch {
+      toast.error('Failed to save face enrollment — please try again');
+    } finally {
+      setEnrollSubmitting(false);
     }
   };
 
@@ -75,12 +100,24 @@ export default function StudentModal({ onClose }: StudentModalProps) {
     }
   };
 
-  const steps = ['Join exam', 'Your details', "You're in!"];
-  const subtitles = [
-    "Enter the 6-digit PIN from your instructor",
-    "Help your instructor identify your submission",
-    "The exam session is ready — good luck!",
-  ];
+  // Face enrollment is a mandatory extra step only for first-time students —
+  // returning students (already_enrolled) skip straight to confirmation.
+  const steps = needsEnrollment
+    ? ['Join exam', 'Your details', 'Face enrollment', "You're in!"]
+    : ['Join exam', 'Your details', "You're in!"];
+  const subtitles = needsEnrollment
+    ? [
+        "Enter the 6-digit PIN from your instructor",
+        "Help your instructor identify your submission",
+        "Look at the camera and follow each prompt",
+        "The exam session is ready — good luck!",
+      ]
+    : [
+        "Enter the 6-digit PIN from your instructor",
+        "Help your instructor identify your submission",
+        "The exam session is ready — good luck!",
+      ];
+  const confirmStepNumber = steps.length;
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
@@ -96,10 +133,10 @@ export default function StudentModal({ onClose }: StudentModalProps) {
 
         {/* Progress bar */}
         <div className="flex gap-1.5 mb-5">
-          {[1, 2, 3].map((s) => (
+          {steps.map((_, i) => (
             <div
-              key={s}
-              className={`flex-1 h-1 rounded-full transition-colors ${s <= step ? 'bg-forest' : 'bg-border-lt'}`}
+              key={i}
+              className={`flex-1 h-1 rounded-full transition-colors ${i + 1 <= step ? 'bg-forest' : 'bg-border-lt'}`}
             />
           ))}
         </div>
@@ -172,8 +209,9 @@ export default function StudentModal({ onClose }: StudentModalProps) {
             <div className="mt-3 p-3 bg-tan-alt rounded-lg flex gap-2 items-start">
               <Laptop className="w-3.5 h-3.5 text-tan mt-0.5 shrink-0" />
               <span className="text-xs text-brown leading-relaxed">
-                Browser and device info will be collected for exam integrity. Your camera will be requested when the session starts.
-              </span>              
+                Browser and device info will be collected for exam integrity. Your camera will be requested when the session starts
+                {needsEnrollment !== false ? ', including a one-time face enrollment on your first exam' : ''}.
+              </span>
             </div>
             <button
               onClick={handleNextStep}
@@ -195,7 +233,18 @@ export default function StudentModal({ onClose }: StudentModalProps) {
           </>
         )}
 
-        {step === 3 && (
+        {needsEnrollment && step === 3 && (
+          <div>
+            <FaceEnrollmentStep onComplete={handleEnrollmentComplete} />
+            {enrollSubmitting && (
+              <p className="text-xs text-brown text-center mt-2 flex items-center justify-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving enrollment...
+              </p>
+            )}
+          </div>
+        )}
+
+        {step === confirmStepNumber && (
           <div className="text-center py-4">
             <div className="w-14 h-14 rounded-full bg-forest/20 flex items-center justify-center mx-auto mb-4">
               <CircleCheck className="w-8 h-8 text-forest" />

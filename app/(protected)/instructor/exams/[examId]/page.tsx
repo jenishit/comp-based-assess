@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import RosterPanel from "./_components/RosterPanel";
 import ExamStats from "./_components/ExamStats";
 import StudentList from "./_components/StudentList";
+import AvailabilityBadge from "../_components/AvailabilityBadge";
 
 export default function ExamDetailPage() {
   const params = useParams();
@@ -111,12 +112,13 @@ export default function ExamDetailPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold text-espresso tracking-tight">{exam.title}</h1>
+            <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">{exam.title}</h1>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
               exam.status === "active" ? "bg-green-100 text-green-700" :
               exam.status === "ended" ? "bg-gray-100 text-gray-500" :
               "bg-amber-100 text-amber-700"
             }`}>{exam.status}</span>
+            <AvailabilityBadge window={exam} />
           </div>
           <p className="text-bark text-sm mt-1">{exam.subject}</p>
         </div>
@@ -139,7 +141,7 @@ export default function ExamDetailPage() {
       />
 
       <div className="mb-6">
-        <RosterPanel examId={exam.id} />
+        <RosterPanel examId={exam.id} groupLinked={Boolean(exam.group_id)} />
       </div>
 
       <StudentList students={exam.students ?? []} />

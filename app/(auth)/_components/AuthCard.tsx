@@ -22,7 +22,7 @@ export default function AuthCard({ title, subtitle, closeHref, children }: AuthC
           <div className="flex justify-between items-center mb-1.5">
             <div className="flex items-center gap-2">
               <GraduationCap size={18} className="text-forest" aria-hidden="true" />
-              <span className="font-medium text-[17px] text-[#1A100A]">{title}</span>
+              <span className="font-display text-[19px] text-[#1A100A]">{title}</span>
             </div>
             <Link
               aria-label="Close"

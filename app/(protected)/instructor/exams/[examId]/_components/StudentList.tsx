@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Users, AlertTriangle, Eye, Mic, Monitor } from "lucide-react";
 import type { StudentAttempt } from "@/types/exam-types";
 
@@ -69,12 +70,12 @@ export default function StudentList({ students }: StudentListProps) {
             )}
 
             <div className="mt-2 flex justify-end">
-              <a
-                href={`/dashboard/attempts/${s.attempt_id}`}
+              <Link
+                href={`/instructor/attempts/${s.attempt_id}`}
                 className="text-xs font-medium text-forest hover:underline"
               >
                 View details
-              </a>
+              </Link>
             </div>
           </div>
         ))}

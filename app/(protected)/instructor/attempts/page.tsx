@@ -23,8 +23,8 @@ export default function AttemptsListPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-espresso tracking-tight">My Attempts</h1>
-        <p className="text-bark text-sm mt-1">View your past exam attempts and results.</p>
+        <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">All Attempts</h1>
+        <p className="text-bark text-sm mt-1">Every attempt across the exams you&apos;ve created.</p>
       </div>
 
       {loading ? (
@@ -35,14 +35,14 @@ export default function AttemptsListPage() {
         <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
           <ClipboardList size={40} className="mx-auto text-sand mb-3" />
           <h3 className="text-base font-medium text-espresso mb-1">No attempts yet</h3>
-          <p className="text-sm text-bark">Join an exam to start your first attempt.</p>
+          <p className="text-sm text-bark">Attempts will appear here once students take one of your exams.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {attempts.map((a) => (
             <Link
               key={a.attempt_id}
-              href={`/dashboard/attempts/${a.attempt_id}`}
+              href={`/instructor/attempts/${a.attempt_id}`}
               className="block bg-white rounded-xl border border-sand-border p-4 hover:border-sage transition-colors no-underline"
             >
               <div className="flex items-center justify-between">

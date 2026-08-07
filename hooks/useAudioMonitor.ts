@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ProctoringEvent, ProctoringEventType } from "@/types/proctoring-types";
-import { reportProctoringEvent } from "@/lib/proctoring/report-event";
 import { createEventThrottle } from "@/lib/proctoring/create-event-throttle";
 
 export interface AudioMonitorState {
@@ -14,7 +13,10 @@ export interface AudioMonitorState {
 interface UseAudioMonitorOptions {
   attemptId: string;
   enabled?: boolean;
-  onEvent?: (event: ProctoringEvent) => void;
+  /** Sink for every audio event this hook produces — wire this to the
+   * shared event batcher (see useProctoringEventBatcher) rather than posting
+   * per-event. */
+  onEvent: (event: ProctoringEvent) => void;
   /** RMS amplitude threshold (0-255) for voice detection. Default 22. */
   voiceThreshold?: number;
   /** Spectral variance threshold for multiple-speaker heuristic. Default 500. */
@@ -47,7 +49,6 @@ function variance(bins: Uint8Array): number {
 
 export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorState {
   const {
-    attemptId,
     enabled = true,
     onEvent,
     voiceThreshold = 22,
@@ -72,10 +73,9 @@ export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorSt
       if (!canFireRef.current(type, minGapMs)) return;
 
       const event: ProctoringEvent = { type, timestamp: Date.now(), ...(meta ? { metadata: meta } : {}) };
-      onEvent?.(event);
-      reportProctoringEvent(attemptId, event).catch(() => { /* fire-and-forget */ });
+      onEvent(event);
     },
-    [attemptId, onEvent],
+    [onEvent],
   );
 
   const analyse = useCallback((): void => {

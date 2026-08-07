@@ -15,7 +15,7 @@ export default function ExamHeader({ exam, answeredCount, onSubmit }: ExamHeader
         <div className="w-7 h-7 rounded-[7px] bg-forest flex items-center justify-center">
           <Brain size={15} color="#fff" aria-hidden="true" />
         </div>
-        <span className="font-medium text-[15px] text-white">EduQuest</span>
+        <span className="font-display text-[16px] text-white">EduQuest</span>
       </div>
 
       <div className="h-5 w-px bg-[#4A3A2A]" />

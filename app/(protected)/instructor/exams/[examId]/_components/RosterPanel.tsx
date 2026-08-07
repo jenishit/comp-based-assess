@@ -5,26 +5,9 @@ import { examRosterGetService, examRosterUploadService, examRosterEntryDeleteSer
 import type { RosterEntry } from "@/types/exam-types";
 import { Upload, X, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { parseRosterCsv } from "@/lib/parse-roster-csv";
 
-function parseRosterCsv(text: string): { name: string; email: string }[] {
-  const rows = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.split(",").map((cell) => cell.trim().replace(/^"|"$/g, "")));
-
-  // Drop a header row like "name,email" — detected by the second column
-  // not looking like an email address.
-  if (rows.length > 0 && !rows[0][1]?.includes("@")) {
-    rows.shift();
-  }
-
-  return rows
-    .filter((cols) => cols.length >= 2 && cols[0] && cols[1]?.includes("@"))
-    .map(([name, email]) => ({ name, email }));
-}
-
-export default function RosterPanel({ examId }: { examId: string }) {
+export default function RosterPanel({ examId, groupLinked }: { examId: string; groupLinked?: boolean }) {
   const [entries, setEntries] = useState<RosterEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -79,12 +62,21 @@ export default function RosterPanel({ examId }: { examId: string }) {
         </label>
       </div>
 
+      {groupLinked && (
+        <p className="text-[11px] text-bark mb-2">
+          This exam is assigned to a group — uploading here also adds these students as group members, and only
+          group members may join.
+        </p>
+      )}
+
       {loading ? (
         <div className="h-10 bg-sand-light rounded-lg animate-pulse" />
       ) : entries.length === 0 ? (
         <p className="text-xs text-bark">
-          No roster uploaded — anyone with the PIN can join. Upload a CSV with{" "}
-          <code className="text-[11px] bg-sand-light px-1 py-0.5 rounded">name,email</code> columns to restrict joining to listed students.
+          {groupLinked
+            ? "No roster uploaded yet — only the group's members may join. Upload a CSV to add students."
+            : <>No roster uploaded — anyone with the PIN can join. Upload a CSV with{" "}
+                <code className="text-[11px] bg-sand-light px-1 py-0.5 rounded">name,email</code> columns to restrict joining to listed students.</>}
         </p>
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">

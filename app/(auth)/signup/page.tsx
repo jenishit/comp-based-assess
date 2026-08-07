@@ -8,12 +8,12 @@ import { Field, FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { registerService } from "@/services/auth-service";
 import { RegisterPayload } from "@/types/auth-types";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -23,8 +23,11 @@ import {
 } from "@/components/ui/select";
 import AuthCard, { authInputCls } from "../_components/AuthCard";
 
-export default function SignupPage() {
+function SignupPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get("role");
+  const defaultRole = roleParam === "TEACHER" || roleParam === "STUDENT" ? roleParam : "";
   const [loading, setLoading] = useState(false);
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -33,12 +36,14 @@ export default function SignupPage() {
       email: "",
       password: "",
       confirm_password: "",
-      user_type: "",
+      user_type: defaultRole,
     },
   });
 
   const email = useWatch({ control: form.control, name: "email" });
   const password = useWatch({ control: form.control, name: "password" });
+  const userType = useWatch({ control: form.control, name: "user_type" });
+  const isStudent = userType === "STUDENT";
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
     if (!email || !password) return;
@@ -77,11 +82,11 @@ export default function SignupPage() {
   };
 
   return (
-    <AuthCard title="Instructor portal" subtitle="Create your instructor account" closeHref="/login">
-      <div className="flex bg-forest rounded-lg p-0.75 mb-4.5 gap-0.75 py-2 border border-sand-border items-center justify-center text-white">
-        Sign up
-      </div>
-
+    <AuthCard
+      title={isStudent ? "Student portal" : "Instructor portal"}
+      subtitle={isStudent ? "Create your student account" : "Create your instructor account"}
+      closeHref="/login"
+    >
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3">
         <Controller
           name="full_name"
@@ -155,5 +160,13 @@ export default function SignupPage() {
         </Button>
       </form>
     </AuthCard>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageContent />
+    </Suspense>
   );
 }

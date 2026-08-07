@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Check, ArrowRight } from "lucide-react";
 import { examJoinService } from "@/services/exam-service";
+import { getJoinErrorMessage } from "@/lib/join-error";
 import { toast } from "sonner";
 import PinStep from "./_components/PinStep";
 import DetailsStep from "./_components/DetailsStep";
@@ -54,8 +55,8 @@ export default function JoinExamPage() {
         toast.error(res.message || "Failed to join exam");
         setStep("details");
       }
-    } catch {
-      toast.error("Invalid PIN or exam not found");
+    } catch (err) {
+      toast.error(getJoinErrorMessage(err));
       setStep("pin");
     }
   };
@@ -69,7 +70,7 @@ export default function JoinExamPage() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-espresso tracking-tight">Join Exam</h1>
+        <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">Join Exam</h1>
         <p className="text-bark text-sm mt-1">Enter the PIN provided by your instructor.</p>
       </div>
 

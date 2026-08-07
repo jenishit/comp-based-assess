@@ -5,6 +5,7 @@ import { examListService } from "@/services/exam-service";
 import type { ExamSummary } from "@/types/exam-types";
 import { FileText, PlusCircle, Users, Clock, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import AvailabilityBadge from "./_components/AvailabilityBadge";
 
 export default function ExamsListPage() {
   const [exams, setExams] = useState<ExamSummary[]>([]);
@@ -25,7 +26,7 @@ export default function ExamsListPage() {
     <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-espresso tracking-tight">My Exams</h1>
+          <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">My Exams</h1>
           <p className="text-bark text-sm mt-1">Manage your exams and share PINs with students.</p>
         </div>
         <Link
@@ -90,6 +91,7 @@ export default function ExamsListPage() {
                 }`}>
                   {exam.status}
                 </span>
+                <AvailabilityBadge window={exam} />
               </div>
 
               <button

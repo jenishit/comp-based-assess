@@ -30,6 +30,13 @@ export default function CreateExamPage() {
       description: "",
       timer_minutes: 60,
       mcq_count: 10,
+      subject_id: "",
+      group_id: "",
+      term: "",
+      available_from_date: "",
+      available_until_date: "",
+      daily_open_time: "",
+      daily_close_time: "",
     },
   });
 
@@ -74,6 +81,13 @@ export default function CreateExamPage() {
         timer_minutes: data.timer_minutes,
         file_id: fileId || undefined,
         mcq_count: String(data.mcq_count),
+        subject_id: data.subject_id || undefined,
+        group_id: data.group_id || undefined,
+        term: data.term || undefined,
+        available_from_date: data.available_from_date || undefined,
+        available_until_date: data.available_until_date || undefined,
+        daily_open_time: data.daily_open_time || undefined,
+        daily_close_time: data.daily_close_time || undefined,
       });
 
       if (fileId) {
@@ -101,7 +115,7 @@ export default function CreateExamPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-espresso tracking-tight">Create Exam</h1>
+        <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">Create Exam</h1>
         <p className="text-bark text-sm mt-1">Upload course material and generate questions.</p>
       </div>
 

@@ -171,18 +171,25 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
       // few keystrokes aren't lost if the student submits right after typing.
       debounceTimers.current.forEach((t) => clearTimeout(t));
       debounceTimers.current.clear();
-      await Promise.allSettled(
-        Array.from(answers.values()).map((a) =>
-          submitAnswerNow(a.questionId, a.value, a.flagged, a.timeSpentSeconds),
-        ),
-      );
+
+      if (answers.size > 0) {
+        await attemptAnswerSubmitService(
+          attemptId,
+          Array.from(answers.values()).map((a) => ({
+            question_id: a.questionId,
+            value: a.value,
+            time_spent_seconds: a.timeSpentSeconds,
+            flagged: a.flagged,
+          })),
+        );
+      }
 
       await attemptSubmitService(attemptId);
       setSubmitted(true);
     } catch {
       toast.error("Failed to submit — please try again.");
     }
-  }, [submitted, attemptId, answers, submitAnswerNow]);
+  }, [submitted, attemptId, answers]);
 
   const answered = useMemo(() => new Set(
     Array.from(answers.entries())

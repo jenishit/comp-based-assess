@@ -27,6 +27,7 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const paramError = searchParams.get('error');
+  const role = searchParams.get('role');
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -72,10 +73,6 @@ function LoginPageContent() {
 
   return (
     <AuthCard title="Log in" subtitle="Welcome back — enter your details to continue." closeHref="/">
-      <div className="flex bg-forest rounded-lg p-0.75 mb-4.5 gap-0.75 py-2 border border-sand-border items-center justify-center text-white">
-        Log in
-      </div>
-
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3">
         <Controller
           name="email"
@@ -110,7 +107,12 @@ function LoginPageContent() {
       </form>
 
       <div className="mt-4 flex items-center">
-        <Link href="/signup" className="text-muted-foreground underline">Create an account</Link>
+        <Link
+          href={role ? `/signup?role=${role}` : "/signup"}
+          className="text-muted-foreground underline"
+        >
+          Create an account
+        </Link>
       </div>
     </AuthCard>
   );

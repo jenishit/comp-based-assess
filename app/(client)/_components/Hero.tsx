@@ -1,13 +1,15 @@
 "use client";
 
-import { Zap, Key, GraduationCap } from "lucide-react";
+import { Key, GraduationCap, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
 
 interface HeroProps {
-  onOpenInstructor: () => void;
   onOpenStudent: () => void;
+  isAuthenticated: boolean;
+  dashboardHref: string;
 }
 
-export default function Hero({ onOpenInstructor, onOpenStudent }: HeroProps) {
+export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: HeroProps) {
   const options = [
     { label: "A", text: "Increase training volume", selected: false },
     { label: "B", text: "Apply SMOTE to minority class", selected: true },
@@ -27,48 +29,51 @@ export default function Hero({ onOpenInstructor, onOpenStudent }: HeroProps) {
       <div className="max-w-content mx-auto flex gap-13 items-center flex-wrap">
         {/* ── Copy ── */}
         <div className="flex-1 min-w-90">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-1.5 bg-forest/20 border border-forest
-                          rounded-full px-3 py-1 mb-5"
-          >
-            <Zap size={11} color="#7FB069" aria-hidden="true" />
-            <span className="text-xs font-medium text-sage">
-              AI-powered assessment platform
-            </span>
-          </div>
-
-          <h1 className="text-[44px] font-medium leading-[1.1] text-white m-0 mb-4 tracking-tight">
+          <h1 className="font-display text-[56px] font-medium leading-[1.05] text-white m-0 mb-5 tracking-tight text-balance">
             Exams that actually
             <br />
-            <span className="text-sage">test understanding</span>
+            <span className="italic text-sage">test understanding</span>
           </h1>
 
-          <p className="text-[15.5px] text-[#B8AEA8] leading-[1.75] max-w-107.5 m-0 mb-8">
-            Generate scenario-based questions from any course material, run
-            secure online exams with live proctoring, and get instant results —
-            all in one platform.
+          <p className="text-[16.5px] text-[#B8AEA8] leading-[1.75] max-w-107.5 m-0 mb-8">
+            Generate scenario-based, AI-authored questions from any course
+            material, run secure online exams with live proctoring, and get
+            instant results — all in one platform.
           </p>
 
           <div className="flex gap-2.5 flex-wrap">
-            <button
-              onClick={onOpenInstructor}
-              className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl border-0
-                         bg-forest text-white text-[15px] font-medium cursor-pointer
-                         hover:bg-forest-dark transition-colors"
-            >
-              <GraduationCap size={17} aria-hidden="true" />
-              Instructor portal
-            </button>
-            <button
-              onClick={onOpenStudent}
-              className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl
-                         bg-transparent text-white text-[15px] font-medium cursor-pointer
-                         border-[1.5px] border-white/25 hover:border-white/50 transition-colors"
-            >
-              <Key size={17} aria-hidden="true" />
-              Join with PIN
-            </button>
+            {isAuthenticated ? (
+              <Link
+                href={dashboardHref}
+                className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl border-0
+                           bg-forest text-white text-[15px] font-medium cursor-pointer
+                           hover:bg-forest-dark transition-colors no-underline"
+              >
+                <LayoutDashboard size={17} aria-hidden="true" />
+                Go to dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl border-0
+                             bg-forest text-white text-[15px] font-medium cursor-pointer
+                             hover:bg-forest-dark transition-colors no-underline"
+                >
+                  <GraduationCap size={17} aria-hidden="true" />
+                  Instructor portal
+                </Link>
+                <button
+                  onClick={onOpenStudent}
+                  className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl
+                             bg-transparent text-white text-[15px] font-medium cursor-pointer
+                             border-[1.5px] border-white/25 hover:border-white/50 transition-colors"
+                >
+                  <Key size={17} aria-hidden="true" />
+                  Join with PIN
+                </button>
+              </>
+            )}
           </div>
 
           {/* Stats */}

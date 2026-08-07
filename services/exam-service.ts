@@ -3,6 +3,8 @@ import type {
   ExamSummary,
   ExamDetail,
   CreateExamPayload,
+  CreatePracticeExamPayload,
+  PracticeAttempt,
   JoinExamPayload,
   JoinExamResponse,
   RosterEntry,
@@ -14,9 +16,14 @@ import type {
   SubmitAnswerPayload,
   AttemptSummary,
   AttemptDetail,
+  AttemptResult,
+  AnswerReview,
+  GradeOverridePayload,
+  GradeOverrideResponse,
 } from "@/types/attempt-types";
 import type { GazeSample } from "@/types/proctoring-types";
 import type { UploadFileResponse, PresignedUploadResponse } from "@/types/upload-types";
+import type { EnrollmentPayload } from "@/types/enrollment-types";
 
 export interface AttemptExam {
   exam_id: string;
@@ -42,6 +49,16 @@ export const examListService = async (): Promise<ExamSummary[]> => {
 
 export const examJoinService = async (payload: JoinExamPayload): Promise<JoinExamResponse> => {
   const response = await axiosInstance.post("/exams/join", payload);
+  return response.data;
+};
+
+export const examPracticeCreateService = async (payload: CreatePracticeExamPayload): Promise<ExamDetail> => {
+  const response = await axiosInstance.post("/exams/practice", payload);
+  return response.data;
+};
+
+export const examPracticeStartService = async (examId: string): Promise<PracticeAttempt> => {
+  const response = await axiosInstance.post(`/exams/${examId}/start`);
   return response.data;
 };
 
@@ -74,7 +91,7 @@ export const attemptQuestionsGetService = async (attemptId: string): Promise<Att
 
 export const attemptAnswerSubmitService = async (
   attemptId: string,
-  payload: SubmitAnswerPayload,
+  payload: SubmitAnswerPayload | SubmitAnswerPayload[],
 ): Promise<void> => {
   await axiosInstance.post(`/attempts/${attemptId}/answers`, payload);
 };
@@ -88,14 +105,46 @@ export const attemptListService = async (): Promise<AttemptSummary[]> => {
   return response.data;
 };
 
+export const attemptMyListService = async (): Promise<AttemptSummary[]> => {
+  const response = await axiosInstance.get("/attempts/me");
+  return response.data;
+};
+
 export const attemptGetService = async (attemptId: string): Promise<AttemptDetail> => {
   const response = await axiosInstance.get(`/attempts/${attemptId}`);
+  return response.data;
+};
+
+export const attemptResultGetService = async (attemptId: string): Promise<AttemptResult> => {
+  const response = await axiosInstance.get(`/attempts/${attemptId}/result`);
+  return response.data;
+};
+
+export const attemptReviewGetService = async (attemptId: string): Promise<AnswerReview[]> => {
+  const response = await axiosInstance.get(`/attempts/${attemptId}/review`);
+  return response.data;
+};
+
+export const attemptAnswerReviewPatchService = async (
+  attemptId: string,
+  answerId: string,
+  payload: GradeOverridePayload,
+): Promise<GradeOverrideResponse> => {
+  const response = await axiosInstance.patch(`/attempts/${attemptId}/answers/${answerId}/review`, payload);
   return response.data;
 };
 
 export const attemptGazeSamplesGetService = async (attemptId: string): Promise<GazeSample[]> => {
   const response = await axiosInstance.get(`/attempts/${attemptId}/gaze-samples`);
   return response.data;
+};
+
+export const enrollmentSubmitService = async (attemptId: string, payload: EnrollmentPayload): Promise<void> => {
+  await axiosInstance.post(`/enrollment/${attemptId}`, payload);
+};
+
+export const attemptFaceVerificationService = async (attemptId: string, embedding: number[]): Promise<void> => {
+  await axiosInstance.post(`/attempts/${attemptId}/face-verification`, { embedding });
 };
 
 export const filePresignedUploadGetService = async (): Promise<PresignedUploadResponse> => {

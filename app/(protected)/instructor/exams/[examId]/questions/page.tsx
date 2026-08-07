@@ -49,7 +49,7 @@ export default function ExamQuestionsPage() {
         <ArrowLeft size={14} /> Back to exam
       </Link>
 
-      <h1 className="text-2xl font-semibold text-espresso tracking-tight mb-6">Questions</h1>
+      <h1 className="text-2xl font-display font-medium text-espresso tracking-tight mb-6">Questions</h1>
 
       {error ? (
         <p className="text-sm text-red-500">{error}</p>
