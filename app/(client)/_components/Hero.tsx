@@ -1,6 +1,6 @@
 "use client";
 
-import { Key, GraduationCap, LayoutDashboard } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 
 interface HeroProps {
@@ -10,166 +10,94 @@ interface HeroProps {
 }
 
 export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: HeroProps) {
-  const options = [
-    { label: "A", text: "Increase training volume", selected: false },
-    { label: "B", text: "Apply SMOTE to minority class", selected: true },
-    { label: "C", text: "Reduce the learning rate", selected: false },
-    { label: "D", text: "Switch to recall metrics", selected: false },
-  ];
-
   return (
-    <section className="bg-espresso py-17 px-7 overflow-hidden relative">
-      {/* Decorative blob */}
+    <section className="relative px-7 pt-20 pb-24 max-w-content mx-auto text-center overflow-hidden">
+      {/* Decorative glow */}
       <div
         aria-hidden="true"
-        className="absolute -top-20 right-0 w-90 h-90 rounded-full
-                   bg-forest/10 pointer-events-none"
+        className="pointer-events-none absolute -top-25 left-1/2 -translate-x-1/2 w-170 h-110"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(75,123,110,0.16), rgba(217,164,65,0.12) 55%, transparent 75%)",
+          filter: "blur(14px)",
+        }}
       />
 
-      <div className="max-w-content mx-auto flex gap-13 items-center flex-wrap">
-        {/* ── Copy ── */}
-        <div className="flex-1 min-w-90 animate-fade-up">
-          <h1 className="font-display text-[56px] font-medium leading-[1.05] text-white m-0 mb-5 tracking-tight text-balance">
-            Exams that actually
-            <br />
-            <span className="italic text-sage">test understanding</span>
-          </h1>
+      <div className="relative animate-fade-up">
+        <span className="inline-block text-xs mb-5 px-3 py-1 rounded-full font-semibold text-[#9A6E1F] bg-gold-soft">
+          Built for calmer test days
+        </span>
 
-          <p className="text-[16.5px] text-[#9C96A8] leading-[1.75] max-w-107.5 m-0 mb-8">
-            Generate scenario-based, AI-authored questions from any course
-            material, run secure online exams with live proctoring, and get
-            instant results — all in one platform.
-          </p>
+        <h1 className="font-display text-5xl md:text-6xl leading-tight mb-6 text-espresso tracking-tight text-balance">
+          Exams that don&apos;t
+          <br />
+          feel like exams.
+        </h1>
 
-          <div className="flex gap-2.5 flex-wrap">
-            {isAuthenticated ? (
+        <p className="text-lg max-w-xl mx-auto mb-10 text-bark">
+          Upload your material, set the terms, and let PracticeHub handle the
+          watching — so everyone in the room can{" "}
+          <span className="font-display italic text-espresso">
+            just focus on the questions
+          </span>
+          .
+        </p>
+
+        {isAuthenticated ? (
+          <Link
+            href={dashboardHref}
+            className="btn-primary inline-flex px-6 py-3 text-[15px] no-underline"
+          >
+            <LayoutDashboard size={17} aria-hidden="true" />
+            Go to dashboard
+          </Link>
+        ) : (
+          <div className="flex flex-col md:flex-row gap-5 max-w-2xl mx-auto text-left">
+            {/* For teachers */}
+            <div className="flex-1 rounded-3xl p-7 bg-espresso">
+              <div className="text-xs mb-2 font-medium text-white/55">For teachers</div>
+              <div className="font-display text-xl mb-4 text-white">Teaching a class?</div>
+              <p className="text-sm mb-5 text-white/70">
+                Build a proctored exam from any PDF in a few minutes.
+              </p>
               <Link
-                href={dashboardHref}
-                className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl border-0
-                           bg-forest text-white text-[15px] font-medium cursor-pointer
-                           hover:bg-forest-dark transition-colors no-underline"
+                href="/signup?role=TEACHER"
+                className="btn-on-dark w-full py-2.5 rounded-xl text-sm no-underline"
               >
-                <LayoutDashboard size={17} aria-hidden="true" />
-                Go to dashboard
+                Get started — it&apos;s free <ArrowRight size={16} aria-hidden="true" />
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl border-0
-                             bg-forest text-white text-[15px] font-medium cursor-pointer
-                             hover:bg-forest-dark transition-colors no-underline"
-                >
-                  <GraduationCap size={17} aria-hidden="true" />
-                  Instructor portal
-                </Link>
-                <button
-                  onClick={onOpenStudent}
-                  className="inline-flex items-center gap-2 px-5.5 py-3 rounded-xl
-                             bg-transparent text-white text-[15px] font-medium cursor-pointer
-                             border-[1.5px] border-white/25 hover:border-white/50 transition-colors"
-                >
-                  <Key size={17} aria-hidden="true" />
-                  Join with PIN
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div className="flex gap-7.5 mt-9.5">
-            {[
-              { val: "2,400+", label: "Exams created" },
-              { val: "98%", label: "Grading accuracy" },
-              { val: "150+", label: "Institutions" },
-            ].map(({ val, label }) => (
-              <div key={label}>
-                <div className="text-2xl font-medium text-sage">{val}</div>
-                <div className="text-xs text-[#726C7E] mt-0.5">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Mock exam card ── */}
-        <div className="flex-[0_0_330px] animate-fade-up [animation-delay:150ms]" aria-hidden="true">
-          <div className="bg-card rounded-[14px] overflow-hidden border border-sand-border">
-            {/* Card header */}
-            <div className="bg-forest px-4 py-3 flex justify-between items-center">
-              <div>
-                <div className="text-[13px] font-medium text-white">
-                  Intro to machine learning
-                </div>
-                <div className="text-[11px] text-sage mt-0.5">
-                  12 questions · 45 min
-                </div>
-              </div>
-              <span
-                className="bg-sage/25 border border-sage rounded-[5px] px-2 py-0.5
-                               text-[10px] font-medium text-white"
-              >
-                LIVE
-              </span>
             </div>
 
-            {/* Question body */}
-            <div className="p-3.75">
-              <div className="text-[10px] font-medium text-sand uppercase tracking-[0.7px] mb-1.5">
-                Question 3 of 12
-              </div>
-              <div
-                className="text-[12.5px] text-[#211E2B] leading-[1.55] p-[10px_11px]
-                              bg-sand-light rounded-[7px] mb-3"
-              >
-                A diagnostic model shows 94% test accuracy but 61% in
-                deployment. Given class imbalance, which strategy best resolves
-                this gap?
-              </div>
+            {/* For students */}
+            <div className="surface-card flex-1 rounded-3xl p-7">
+              <div className="text-xs mb-2 font-medium text-bark">For students</div>
+              <div className="font-display text-xl mb-3 text-espresso">Have a PIN?</div>
+              <p className="text-sm text-bark">
+                Your teacher will share a 6-digit code when it&apos;s time.
+              </p>
 
-              {options.map(({ label, text, selected }) => (
-                <div
-                  key={label}
-                  className={`flex items-center gap-1.5 px-2.5 py-3.75 rounded-1.5
-                              mb-1 border-[1.5px] transition-none
-                              ${
-                                selected
-                                  ? "border-forest bg-forest/10"
-                                  : "border-sand-border bg-card"
-                              }`}
-                >
+              <div className="ticket-perforation my-4 border-t-2 border-dashed border-sand-border" />
+
+              <div className="flex gap-1.5">
+                {Array.from({ length: 6 }).map((_, i) => (
                   <div
-                    className={`w-4.5 h-4.5 rounded-full shrink-0 flex items-center
-                                justify-content text-[9.5px] font-medium
-                                ${selected ? "bg-forest text-white" : "bg-sand-light text-bark"}`}
-                    style={{ justifyContent: "center" }}
+                    key={i}
+                    className="flex-1 h-9 rounded-lg flex items-center justify-center text-sm font-mono bg-card border border-sand-border text-muted-light"
                   >
-                    {label}
+                    •
                   </div>
-                  <span
-                    className={`text-[11.5px] ${
-                      selected
-                        ? "text-forest-dark font-medium"
-                        : "text-[#726C7E]"
-                    }`}
-                  >
-                    {text}
-                  </span>
-                </div>
-              ))}
-
-              {/* Progress */}
-              <div className="mt-2.5">
-                <div className="flex justify-between text-[10px] text-sand mb-1">
-                  <span>Progress</span>
-                  <span>3 / 12</span>
-                </div>
-                <div className="h-0.75 bg-sand-border rounded-full">
-                  <div className="h-full w-1/4 bg-forest rounded-full" />
-                </div>
+                ))}
               </div>
+
+              <button
+                onClick={onOpenStudent}
+                className="btn-ghost text-xs mt-3 font-medium text-forest-dark"
+              >
+                Enter exam <ArrowRight size={12} aria-hidden="true" />
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

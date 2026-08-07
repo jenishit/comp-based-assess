@@ -29,6 +29,7 @@ const config: Config = {
         primary: {
           DEFAULT: "#4B7B6E",
           foreground: "#F2EFE6",
+          soft: "#E3EEE9",
         },
         destructive: {
           DEFAULT: "#D97D6C",
@@ -65,6 +66,7 @@ const config: Config = {
         bark: "#726C7E",
         olive: "#3C6459",
         "dk-forest": "#3C6459",
+        "muted-light": "#9C96A8",
         gold: {
           DEFAULT: "#D9A441",
           soft: "#F6EBD3",
