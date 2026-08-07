@@ -40,7 +40,7 @@ export default function HowItWorks() {
     <section className="py-16 px-6 md:px-8 bg-cream">
       <div className="max-w-265 mx-auto">
         <div className="text-center mb-10">
-          <h2 className="font-display text-3xl md:text-4xl text-dark tracking-tight text-balance">How EduQuest works</h2>
+          <h2 className="font-display text-3xl md:text-4xl text-dark tracking-tight text-balance">How PracticeHub works</h2>
           <p className="text-sm text-brown mt-2.5">End‑to‑end flows for instructors and students.</p>
         </div>
 

@@ -28,14 +28,14 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
 
       <div className="max-w-content mx-auto flex gap-13 items-center flex-wrap">
         {/* ── Copy ── */}
-        <div className="flex-1 min-w-90">
+        <div className="flex-1 min-w-90 animate-fade-up">
           <h1 className="font-display text-[56px] font-medium leading-[1.05] text-white m-0 mb-5 tracking-tight text-balance">
             Exams that actually
             <br />
             <span className="italic text-sage">test understanding</span>
           </h1>
 
-          <p className="text-[16.5px] text-[#B8AEA8] leading-[1.75] max-w-107.5 m-0 mb-8">
+          <p className="text-[16.5px] text-[#9C96A8] leading-[1.75] max-w-107.5 m-0 mb-8">
             Generate scenario-based, AI-authored questions from any course
             material, run secure online exams with live proctoring, and get
             instant results — all in one platform.
@@ -85,15 +85,15 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
             ].map(({ val, label }) => (
               <div key={label}>
                 <div className="text-2xl font-medium text-sage">{val}</div>
-                <div className="text-xs text-[#7A6E68] mt-0.5">{label}</div>
+                <div className="text-xs text-[#726C7E] mt-0.5">{label}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* ── Mock exam card ── */}
-        <div className="flex-[0_0_330px]" aria-hidden="true">
-          <div className="bg-white rounded-[14px] overflow-hidden border border-sand-border">
+        <div className="flex-[0_0_330px] animate-fade-up [animation-delay:150ms]" aria-hidden="true">
+          <div className="bg-card rounded-[14px] overflow-hidden border border-sand-border">
             {/* Card header */}
             <div className="bg-forest px-4 py-3 flex justify-between items-center">
               <div>
@@ -118,7 +118,7 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
                 Question 3 of 12
               </div>
               <div
-                className="text-[12.5px] text-[#2A1A0E] leading-[1.55] p-[10px_11px]
+                className="text-[12.5px] text-[#211E2B] leading-[1.55] p-[10px_11px]
                               bg-sand-light rounded-[7px] mb-3"
               >
                 A diagnostic model shows 94% test accuracy but 61% in
@@ -134,7 +134,7 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
                               ${
                                 selected
                                   ? "border-forest bg-forest/10"
-                                  : "border-sand-border bg-white"
+                                  : "border-sand-border bg-card"
                               }`}
                 >
                   <div
@@ -149,7 +149,7 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
                     className={`text-[11.5px] ${
                       selected
                         ? "text-forest-dark font-medium"
-                        : "text-[#5A4A3A]"
+                        : "text-[#726C7E]"
                     }`}
                   >
                     {text}

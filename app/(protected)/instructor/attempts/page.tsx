@@ -32,7 +32,7 @@ export default function AttemptsListPage() {
           {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       ) : attempts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
+        <div className="text-center py-16 bg-card rounded-xl border border-sand-border">
           <ClipboardList size={40} className="mx-auto text-sand mb-3" />
           <h3 className="text-base font-medium text-espresso mb-1">No attempts yet</h3>
           <p className="text-sm text-bark">Attempts will appear here once students take one of your exams.</p>
@@ -43,7 +43,7 @@ export default function AttemptsListPage() {
             <Link
               key={a.attempt_id}
               href={`/instructor/attempts/${a.attempt_id}`}
-              className="block bg-white rounded-xl border border-sand-border p-4 hover:border-sage transition-colors no-underline"
+              className="block bg-card rounded-xl border border-sand-border p-4 hover:border-sage transition-colors no-underline"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">

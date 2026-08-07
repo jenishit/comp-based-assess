@@ -19,7 +19,7 @@ export default function CTABanner({
         <h2 className="font-display text-[36px] text-white tracking-tight mb-3 text-balance">
           Ready to transform your assessments?
         </h2>
-        <p className="text-[15px] text-[#B8AEA8] leading-[1.7] mb-8">
+        <p className="text-[15px] text-[#9C96A8] leading-[1.7] mb-8">
           Join educators using AI-generated, LLM-resistant questions to run
           exams that actually measure understanding.
         </p>

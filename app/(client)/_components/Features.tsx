@@ -11,8 +11,8 @@ const FEATURES = [
   },
   {
     Icon: Shield,
-    color: 'text-[#6B7C3F]',
-    bg: 'bg-[#6B7C3F]/10',
+    color: 'text-[#3C6459]',
+    bg: 'bg-[#3C6459]/10',
     title: 'LLM-resistant design',
     desc: 'Questions require genuine reasoning across concepts — not answerable by pasting into ChatGPT.',
   },
@@ -53,11 +53,11 @@ export default function Features() {
 
         {/* Heading — pinned left, stays in view as the list runs down on wide screens */}
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <h2 className="font-display text-[38px] leading-[1.1] text-[#1A100A] tracking-tight m-0 text-balance">
+          <h2 className="font-display text-[38px] leading-[1.1] text-[#2E2A3D] tracking-tight m-0 text-balance">
             Built for academic integrity
           </h2>
           <p className="text-[15px] text-bark leading-[1.7] mt-4 max-w-90">
-            Every layer of EduQuest exists to make cheating harder and grading
+            Every layer of PracticeHub exists to make cheating harder and grading
             faster — from how questions are written to how sessions are watched.
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function Features() {
                 <Icon size={19} className={color} aria-hidden="true" />
               </div>
               <div>
-                <p className="font-medium text-[15px] text-[#1A100A] mb-1">{title}</p>
+                <p className="font-medium text-[15px] text-[#2E2A3D] mb-1">{title}</p>
                 <p className="text-[13.5px] text-bark leading-[1.65] m-0 max-w-115">{desc}</p>
               </div>
             </div>

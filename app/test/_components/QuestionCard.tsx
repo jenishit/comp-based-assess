@@ -42,7 +42,7 @@ export default function QuestionCard({
             "border transition-colors",
             flagged
               ? "bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-100"
-              : "bg-white text-bark border-sand-border hover:bg-sand-light"
+              : "bg-card text-bark border-sand-border hover:bg-sand-light"
           )}
         >
           {flagged ? <FlagOff size={13} /> : <Flag size={13} />}
@@ -52,7 +52,7 @@ export default function QuestionCard({
 
       {/* Question text */}
       <div className="bg-sand-light rounded-xl p-5 mb-6 border border-sand-border">
-        <p className="text-[15px] text-[#1A100A] leading-[1.7] m-0">{question.text}</p>
+        <p className="text-[15px] text-[#2E2A3D] leading-[1.7] m-0">{question.text}</p>
       </div>
 
       {/* MCQ options */}
@@ -70,7 +70,7 @@ export default function QuestionCard({
                   "text-left w-full transition-all text-[14px]",
                   selected
                     ? "border-forest bg-forest/10 text-forest-dark"
-                    : "border-sand-border bg-white text-[#2A1A0E] hover:bg-sand-light"
+                    : "border-sand-border bg-card text-[#211E2B] hover:bg-sand-light"
                 )}
               >
                 <div className={clsx(
@@ -97,7 +97,7 @@ export default function QuestionCard({
             onChange={e => onAnswer(e.target.value)}
             placeholder="Type your answer here…"
             className="flex-1 w-full px-5 py-4 rounded-xl border-[1.5px] border-sand-border
-                       bg-white text-[14px] text-[#1A100A] leading-[1.7] outline-none resize-none
+                       bg-card text-[14px] text-[#2E2A3D] leading-[1.7] outline-none resize-none
                        focus:border-forest transition-colors placeholder:text-sand min-h-45"
           />
           <p className="text-[11px] text-bark text-right mt-1.5">

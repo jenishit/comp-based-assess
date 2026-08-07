@@ -17,21 +17,21 @@ export default function ExamStats({ exam, generationStatus, generationError, ret
 
   return (
     <div className="grid grid-cols-3 gap-4 mb-6">
-      <div className="bg-white rounded-xl border border-sand-border p-4">
+      <div className="bg-card rounded-xl border border-sand-border p-4">
         <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
           <Users size={14} /> Students
         </div>
         <p className="text-2xl font-semibold text-espresso">{exam.students?.length || 0}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-border p-4">
+      <div className="bg-card rounded-xl border border-sand-border p-4">
         <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
           <Clock size={14} /> Duration
         </div>
         <p className="text-2xl font-semibold text-espresso">{exam.duration_minutes} min</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-border p-4">
+      <div className="bg-card rounded-xl border border-sand-border p-4">
         <div className="flex items-center gap-2 text-bark text-xs font-medium uppercase tracking-wide mb-1">
           <FileText size={14} /> Questions
         </div>

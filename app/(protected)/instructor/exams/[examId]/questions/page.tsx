@@ -56,11 +56,11 @@ export default function ExamQuestionsPage() {
       ) : questions === null ? (
         <div className="grid gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white rounded-xl border border-sand-border animate-pulse" />
+            <div key={i} className="h-24 bg-card rounded-xl border border-sand-border animate-pulse" />
           ))}
         </div>
       ) : questions.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
+        <div className="text-center py-16 bg-card rounded-xl border border-sand-border">
           <Loader2 size={28} className={`mx-auto text-sand mb-3 ${status === "processing" || status === "pending" ? "animate-spin" : ""}`} />
           <p className="text-sm text-bark">
             {status === "processing" || status === "pending" ? "Questions are still being generated." : "No questions yet."}
@@ -69,7 +69,7 @@ export default function ExamQuestionsPage() {
       ) : (
         <div className="space-y-4">
           {questions.map((q, i) => (
-            <div key={q.id} className="bg-white rounded-xl border border-sand-border p-5">
+            <div key={q.id} className="bg-card rounded-xl border border-sand-border p-5">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <p className="text-sm font-medium text-espresso">
                   {i + 1}. {q.text}

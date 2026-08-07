@@ -92,7 +92,7 @@ function GroupMembers({ group }: { group: Group }) {
       ) : (
         <div className="space-y-1.5">
           {members.map((m) => (
-            <div key={m.student_id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-sand-border">
+            <div key={m.student_id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-sand-border">
               <span className="flex-1 text-xs text-espresso">{m.student_name}</span>
               <Link
                 href={`/instructor/academic/report/${m.student_id}?term=${encodeURIComponent(group.term)}`}
@@ -177,7 +177,7 @@ export default function GroupsPanel() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-sand-border p-5">
+    <div className="bg-card rounded-xl border border-sand-border p-5">
       <h2 className="text-base font-semibold text-espresso mb-1">Groups</h2>
       <p className="text-xs text-bark mb-4">
         Link a group to a subject to give that subject its own student set — exams assigned to the group only admit its members.

@@ -34,7 +34,7 @@ export default function MLReviewPanel({ reviews }: MLReviewPanelProps) {
           const entries = Object.entries(review.result).filter(([key]) => key !== "note");
           const note = review.result.note as string | undefined;
           return (
-            <div key={i} className="rounded-xl border border-sand-border bg-white p-4">
+            <div key={i} className="rounded-xl border border-sand-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Icon size={15} className="text-forest shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium text-espresso">{meta.label}</p>

@@ -128,7 +128,7 @@ export default function ExamDetailPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors cursor-pointer border-0"
         >
           {copied ? <Check size={16} /> : <Copy size={16} />}
-          {copied ? "Copied!" : exam.pin}
+          <span className={copied ? "" : "font-mono tracking-wider"}>{copied ? "Copied!" : exam.pin}</span>
         </button>
       </div>
 

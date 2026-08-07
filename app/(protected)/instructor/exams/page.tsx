@@ -41,11 +41,11 @@ export default function ExamsListPage() {
       {loading ? (
         <div className="grid gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white rounded-xl border border-sand-border animate-pulse" />
+            <div key={i} className="h-24 bg-card rounded-xl border border-sand-border animate-pulse" />
           ))}
         </div>
       ) : exams.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
+        <div className="text-center py-16 bg-card rounded-xl border border-sand-border">
           <FileText size={40} className="mx-auto text-sand mb-3" />
           <h3 className="text-base font-medium text-espresso mb-1">No exams yet</h3>
           <p className="text-sm text-bark mb-4">Create your first exam to get started.</p>
@@ -62,7 +62,7 @@ export default function ExamsListPage() {
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className="bg-white rounded-xl border border-sand-border p-4 flex items-center gap-4 hover:border-sage transition-colors"
+              className="bg-card rounded-xl border border-sand-border p-4 flex items-center gap-4 hover:border-sage transition-colors"
             >
               <div className="w-10 h-10 rounded-lg bg-forest/10 flex items-center justify-center shrink-0">
                 <FileText size={18} className="text-forest" />

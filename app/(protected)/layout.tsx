@@ -72,7 +72,7 @@ export default function DashboardLayout({
             <GraduationCap size={18} className="text-white" aria-hidden="true" />
           </div>
           <span className="font-display text-lg text-white tracking-tight">
-            EduQuest
+            PracticeHub
           </span>
           <span className="ml-auto text-[10px] font-medium text-sand uppercase tracking-wider border border-sand/30 rounded px-1.5 py-0.5">
             {isTeacher ? "Teacher" : "Student"}
@@ -123,7 +123,7 @@ export default function DashboardLayout({
       </aside>
 
       <div className="flex-1 flex flex-col lg:ml-64">
-        <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-sand-border flex items-center px-4 lg:px-6 gap-3">
+        <header className="sticky top-0 z-30 h-16 bg-card/90 backdrop-blur-md border-b border-sand-border flex items-center px-4 lg:px-6 gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-bark hover:text-espresso transition-colors border-0 bg-transparent cursor-pointer"

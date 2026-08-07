@@ -66,7 +66,7 @@ export default function SubjectsPanel() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-sand-border p-5">
+    <div className="bg-card rounded-xl border border-sand-border p-5">
       <h2 className="text-base font-semibold text-espresso mb-4">Subjects</h2>
 
       <div className="flex gap-2 mb-4">

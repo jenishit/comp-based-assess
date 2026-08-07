@@ -119,7 +119,7 @@ export default function CreateExamPage() {
         <p className="text-bark text-sm mt-1">Upload course material and generate questions.</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-border p-6">
+      <div className="bg-card rounded-xl border border-sand-border p-6">
         {step === "upload" && <UploadStep uploading={uploading} onFileSelect={handleFileSelect} />}
 
         {step === "details" && (

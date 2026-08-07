@@ -18,11 +18,11 @@ export default function SecurityWarningModal({ warning, onDismiss }: SecurityWar
 
   return (
     <div className="fixed inset-0 z-200 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl">
+      <div className="bg-card rounded-2xl max-w-sm w-full p-6 text-center shadow-xl">
         <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle size={26} className="text-amber-500" aria-hidden="true" />
         </div>
-        <h2 className="text-lg font-semibold text-[#1A100A] m-0 mb-2">
+        <h2 className="text-lg font-semibold text-[#2E2A3D] m-0 mb-2">
           Warning {warning.count}/{warning.maxViolations}
         </h2>
         <p className="text-sm text-bark leading-relaxed m-0 mb-5">

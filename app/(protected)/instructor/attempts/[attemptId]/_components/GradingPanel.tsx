@@ -49,7 +49,7 @@ function AnswerReviewRow({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-sand-border p-4">
+    <div className="bg-card rounded-xl border border-sand-border p-4">
       <div className="flex items-start justify-between mb-2 gap-3">
         <p className="text-sm text-espresso flex-1">{review.question_text}</p>
         <span className="text-[10px] text-bark shrink-0">

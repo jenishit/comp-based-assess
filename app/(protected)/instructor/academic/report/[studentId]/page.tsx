@@ -48,7 +48,7 @@ function AnnualReportContent() {
       </div>
 
       {report.status !== "completed" ? (
-        <div className="bg-white rounded-xl border border-sand-border p-6 text-center">
+        <div className="bg-card rounded-xl border border-sand-border p-6 text-center">
           <BookOpen size={28} className="mx-auto text-sand mb-3" aria-hidden="true" />
           <h3 className="text-base font-medium text-espresso mb-1">Not enough data yet</h3>
           <p className="text-sm text-bark">
@@ -58,15 +58,15 @@ function AnnualReportContent() {
       ) : (
         <div className="grid gap-5">
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-sand-border p-4">
+            <div className="bg-card rounded-xl border border-sand-border p-4">
               <p className="text-xs text-bark uppercase tracking-wide mb-1">Overall average</p>
               <p className="text-2xl font-semibold text-espresso">{report.overall_average}%</p>
             </div>
-            <div className="bg-white rounded-xl border border-sand-border p-4">
+            <div className="bg-card rounded-xl border border-sand-border p-4">
               <p className="text-xs text-bark uppercase tracking-wide mb-1">Exams completed</p>
               <p className="text-2xl font-semibold text-espresso">{report.total_exams}</p>
             </div>
-            <div className="bg-white rounded-xl border border-sand-border p-4">
+            <div className="bg-card rounded-xl border border-sand-border p-4">
               <p className="text-xs text-bark uppercase tracking-wide mb-1">Subjects</p>
               <p className="text-2xl font-semibold text-espresso">{report.subjects_completed}</p>
             </div>
@@ -80,7 +80,7 @@ function AnnualReportContent() {
           )}
 
           {report.subject_wise_average && Object.keys(report.subject_wise_average).length > 0 && (
-            <div className="bg-white rounded-xl border border-sand-border p-5">
+            <div className="bg-card rounded-xl border border-sand-border p-5">
               <h2 className="text-sm font-semibold text-espresso mb-3">Subject-wise average</h2>
               <div className="space-y-2">
                 {Object.entries(report.subject_wise_average).map(([subject, avg]) => (
@@ -97,7 +97,7 @@ function AnnualReportContent() {
           )}
 
           {report.bloom_level_performance && Object.keys(report.bloom_level_performance).length > 0 && (
-            <div className="bg-white rounded-xl border border-sand-border p-5">
+            <div className="bg-card rounded-xl border border-sand-border p-5">
               <h2 className="text-sm font-semibold text-espresso mb-3">Bloom&apos;s level performance</h2>
               <div className="space-y-2">
                 {Object.entries(report.bloom_level_performance).map(([level, avg]) => (
@@ -114,7 +114,7 @@ function AnnualReportContent() {
           )}
 
           {report.exam_history && report.exam_history.length > 0 && (
-            <div className="bg-white rounded-xl border border-sand-border p-5">
+            <div className="bg-card rounded-xl border border-sand-border p-5">
               <h2 className="text-sm font-semibold text-espresso mb-3">Exam history</h2>
               <div className="space-y-2">
                 {report.exam_history.map((row, i) => (

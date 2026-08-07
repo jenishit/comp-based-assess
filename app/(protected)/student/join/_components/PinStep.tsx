@@ -25,8 +25,8 @@ export default function PinStep({ pin, inputRefs, onPinChange, onKeyDown, onCont
             value={digit}
             onChange={(e) => onPinChange(idx, e.target.value)}
             onKeyDown={(e) => onKeyDown(idx, e)}
-            className={`w-11 h-14 text-center text-xl font-medium rounded-xl border-2 outline-none transition-colors ${
-              digit ? "border-forest bg-forest/5" : "border-sand-border bg-white"
+            className={`w-11 h-14 text-center text-xl font-mono font-medium rounded-xl border-2 outline-none transition-colors ${
+              digit ? "border-forest bg-forest/5" : "border-sand-border bg-card"
             }`}
           />
         ))}

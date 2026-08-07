@@ -120,7 +120,7 @@ export default function StudentModal({ onClose }: StudentModalProps) {
   const confirmStepNumber = steps.length;
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
+    <div className="bg-card rounded-2xl overflow-hidden shadow-xl">
       <div className="h-1 bg-linear-to-r from-sage to-forest" />
       <div className="p-6 md:p-7">
         <div className="flex justify-between items-start mb-1">
@@ -155,7 +155,7 @@ export default function StudentModal({ onClose }: StudentModalProps) {
                   onChange={(e) => handlePinChange(idx, e.target.value)}
                   onKeyDown={(e) => handlePinKeyDown(idx, e)}
                   className={`w-11 h-14 text-center text-xl font-medium rounded-xl border-2 outline-none transition-colors ${
-                    digit ? 'border-forest bg-forest/10' : 'border-border-lt bg-white'
+                    digit ? 'border-forest bg-forest/10' : 'border-border-lt bg-card'
                   }`}
                 />
               ))}

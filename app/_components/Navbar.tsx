@@ -23,7 +23,7 @@ export default function Navbar() {
             <Brain size={15} color="#fff" aria-hidden="true" />
           </div>
           <span className="font-display text-[17px] text-white tracking-tight">
-            EduQuest
+            PracticeHub
           </span>
         </div>
         <div className="flex gap-6 flex-1">
@@ -31,7 +31,7 @@ export default function Navbar() {
             <a
               key={label}
               href={href}
-              className="text-sm text-[#A09488] hover:text-white transition-colors no-underline"
+              className="text-sm text-[#9C96A8] hover:text-white transition-colors no-underline"
             >
               {label}
             </a>

@@ -85,7 +85,7 @@ function ExamPageContent() {
       <div className="min-h-screen bg-espresso flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={32} className="animate-spin text-sage mx-auto mb-3" aria-hidden="true" />
-          <p className="text-[#B8AEA8] text-[15px]">Loading exam…</p>
+          <p className="text-[#9C96A8] text-[15px]">Loading exam…</p>
         </div>
       </div>
     );
@@ -94,7 +94,7 @@ function ExamPageContent() {
   if (loadError || !exam) {
     return (
       <div className="min-h-screen bg-espresso flex items-center justify-center px-6">
-        <p className="text-[#B8AEA8] text-[15px] text-center max-w-sm">
+        <p className="text-[#9C96A8] text-[15px] text-center max-w-sm">
           {loadError ?? "Exam not found."}
         </p>
       </div>
@@ -109,7 +109,7 @@ function ExamPageContent() {
             <Send size={28} className="text-sage" aria-hidden="true" />
           </div>
           <h2 className="text-2xl font-medium text-white mb-2">Exam submitted!</h2>
-          <p className="text-[#B8AEA8] text-[15px]">Your answers are being graded.</p>
+          <p className="text-[#9C96A8] text-[15px]">Your answers are being graded.</p>
           {sessionStatus === "authenticated" && attemptId && (
             <Link
               href={`/student/attempts/${attemptId}`}

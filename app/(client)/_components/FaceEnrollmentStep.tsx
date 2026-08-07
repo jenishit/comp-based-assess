@@ -120,7 +120,7 @@ export default function FaceEnrollmentStep({ onComplete }: FaceEnrollmentStepPro
                 setCameraError(null);
                 startCamera();
               }}
-              className="mt-1 flex items-center gap-1.5 text-xs text-white bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 cursor-pointer border-0"
+              className="mt-1 flex items-center gap-1.5 text-xs text-white bg-card/10 px-3 py-1.5 rounded-lg hover:bg-card/20 cursor-pointer border-0"
             >
               <RotateCcw className="w-3 h-3" /> Retry
             </button>

@@ -65,26 +65,26 @@ export default function StudentAttemptResultPage() {
       </div>
 
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-white rounded-xl border border-sand-border p-3 col-span-2 sm:col-span-1">
+        <div className="bg-card rounded-xl border border-sand-border p-3 col-span-2 sm:col-span-1">
           <p className="text-[10px] font-medium text-bark uppercase tracking-wide">Status</p>
           <div className={`flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs font-medium w-fit ${status.className}`}>
             <Icon size={12} aria-hidden="true" />
             {status.label}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-sand-border p-3">
+        <div className="bg-card rounded-xl border border-sand-border p-3">
           <p className="text-[10px] font-medium text-bark uppercase tracking-wide">Score</p>
           <p className="text-sm font-semibold text-espresso mt-1">
             {result.total_score !== null ? `${result.total_score}/${result.total_marks}` : "--"}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-sand-border p-3">
+        <div className="bg-card rounded-xl border border-sand-border p-3">
           <p className="text-[10px] font-medium text-bark uppercase tracking-wide">Started</p>
           <p className="text-sm font-semibold text-espresso mt-1">
             {result.started_at ? new Date(result.started_at).toLocaleDateString() : "--"}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-sand-border p-3">
+        <div className="bg-card rounded-xl border border-sand-border p-3">
           <p className="text-[10px] font-medium text-bark uppercase tracking-wide">Submitted</p>
           <p className="text-sm font-semibold text-espresso mt-1">
             {result.submitted_at ? new Date(result.submitted_at).toLocaleDateString() : "--"}

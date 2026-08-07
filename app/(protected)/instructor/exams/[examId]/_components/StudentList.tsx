@@ -24,7 +24,7 @@ interface StudentListProps {
 export default function StudentList({ students }: StudentListProps) {
   if (students.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-sand-border">
+      <div className="text-center py-12 bg-card rounded-xl border border-sand-border">
         <Users size={32} className="mx-auto text-sand mb-3" />
         <h3 className="text-base font-medium text-espresso mb-1">No students yet</h3>
         <p className="text-sm text-bark">Share the PIN with your students to let them join.</p>
@@ -37,7 +37,7 @@ export default function StudentList({ students }: StudentListProps) {
       <h2 className="text-base font-semibold text-espresso mb-3">Students ({students.length})</h2>
       <div className="space-y-3">
         {students.map((s) => (
-          <div key={s.attempt_id} className="bg-white rounded-xl border border-sand-border p-4">
+          <div key={s.attempt_id} className="bg-card rounded-xl border border-sand-border p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-semibold text-espresso">{s.student_name}</p>

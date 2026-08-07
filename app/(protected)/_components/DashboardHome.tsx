@@ -31,7 +31,7 @@ export default function DashboardHome() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-white rounded-xl border border-sand-border p-4 flex flex-col gap-2">
+            <div key={label} className="bg-card rounded-xl border border-sand-border p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Icon size={16} className={color} aria-hidden="true" />
                 <span className="text-xs font-medium text-bark uppercase tracking-wide">{label}</span>
@@ -41,7 +41,7 @@ export default function DashboardHome() {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-sand-border p-5">
+        <div className="bg-card rounded-xl border border-sand-border p-5">
           <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link href="/instructor/exams/new" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
@@ -80,7 +80,7 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {studentStats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl border border-sand-border p-4 flex flex-col gap-2">
+          <div key={label} className="bg-card rounded-xl border border-sand-border p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Icon size={16} className={color} aria-hidden="true" />
               <span className="text-xs font-medium text-bark uppercase tracking-wide">{label}</span>
@@ -90,7 +90,7 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-border p-5">
+      <div className="bg-card rounded-xl border border-sand-border p-5">
         <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Link href="/student/join" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">

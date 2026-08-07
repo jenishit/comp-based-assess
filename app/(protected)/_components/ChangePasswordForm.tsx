@@ -37,7 +37,7 @@ export default function ChangePasswordForm() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-sand-border p-5 max-w-md">
+    <div className="bg-card rounded-xl border border-sand-border p-5 max-w-md">
       <div className="flex items-center gap-2 mb-4">
         <KeyRound size={16} className="text-forest" aria-hidden="true" />
         <h2 className="text-base font-semibold text-espresso">Change password</h2>

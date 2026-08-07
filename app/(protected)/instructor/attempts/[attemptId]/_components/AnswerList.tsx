@@ -13,7 +13,7 @@ export default function AnswerList({ answers }: AnswerListProps) {
       <h2 className="text-base font-semibold text-espresso mb-3">Answers ({answers.length})</h2>
       <div className="space-y-3">
         {answers.map((a, i) => (
-          <div key={a.question_id} className="bg-white rounded-xl border border-sand-border p-4">
+          <div key={a.question_id} className="bg-card rounded-xl border border-sand-border p-4">
             <div className="flex items-start justify-between mb-2">
               <p className="text-xs text-bark font-medium">Question {i + 1}</p>
               <div className="flex items-center gap-2 text-[10px]">
@@ -36,7 +36,7 @@ export default function AnswerList({ answers }: AnswerListProps) {
                       correct ? "bg-green-50 border-green-200 text-green-700" :
                       "bg-cream border-sand-border text-espresso"
                     }`}>
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 bg-white">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 bg-card">
                         {["A", "B", "C", "D", "E"][oi]}
                       </div>
                       <span>{opt}</span>

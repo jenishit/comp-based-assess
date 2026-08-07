@@ -74,7 +74,7 @@ export default function JoinExamPage() {
         <p className="text-bark text-sm mt-1">Enter the PIN provided by your instructor.</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-border p-6">
+      <div className="bg-card rounded-xl border border-sand-border p-6">
         {step === "pin" && (
           <PinStep
             pin={pin}
