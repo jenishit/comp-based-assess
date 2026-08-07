@@ -1,0 +1,263 @@
+' ============================================================
+'  CBA System — PlantUML sources for all UML diagrams
+'  Render at https://www.plantuml.com/plantuml or the VS Code
+'  PlantUML extension. Each @startuml..@enduml is one diagram.
+' ============================================================
+
+' ---------- 1. CLASS DIAGRAM ----------
+@startuml Class
+class User {
+  +id : UUID
+  +name : String
+  +email : String
+  +password_hash : String
+  +role : UserRole
+  +login()
+  +change_password()
+}
+class Exam {
+  +id : UUID
+  +title : String
+  +exam_code : String
+  +timer_minutes : Integer
+  +require_seb : Boolean
+  +is_practice : Boolean
+  +generate_exam_code()
+  +availability_state()
+}
+class Question {
+  +id : UUID
+  +type : QuestionType
+  +text : String
+  +options : JSON
+  +correct_option : String
+  +marks : Integer
+  +bloom_level : String
+}
+class ExamAttempt {
+  +id : UUID
+  +status : AttemptStatus
+  +total_score : Float
+  +started_at : DateTime
+  +submitted_at : DateTime
+}
+class Answer {
+  +id : UUID
+  +selected_option : String
+  +text_answer : String
+  +marks_awarded : Float
+  +teacher_reviewed : Boolean
+}
+class ProctoringEvent {
+  +id : UUID
+  +type : String
+  +timestamp : Float
+  +event_metadata : JSON
+  +severity()
+}
+class EvidenceCapture {
+  +id : UUID
+  +event_type : String
+  +s3_key : String
+  +timestamp : Float
+}
+class FaceEnrollment {
+  +id : UUID
+  +embeddings : Float[][]
+  +model_version : String
+}
+class MLReview {
+  +id : UUID
+  +kind : String
+  +result : JSON
+}
+class Group { +id : UUID; +name : String; +term : String }
+class Subject { +id : UUID; +name : String }
+
+User "1" --> "0..*" Exam : creates
+User "1" --> "0..*" ExamAttempt : takes
+User "1" --> "0..1" FaceEnrollment : enrols
+Subject "1" --> "0..*" Exam : categorises
+Group "0..1" --> "0..*" Exam : assigned
+Exam "1" *-- "1..*" Question : contains
+Exam "1" --> "0..*" ExamAttempt : has
+ExamAttempt "1" *-- "0..*" Answer : records
+ExamAttempt "1" *-- "0..*" ProctoringEvent : emits
+ExamAttempt "1" *-- "0..*" EvidenceCapture : captures
+ExamAttempt "1" --> "0..*" MLReview : reviewed
+Question "1" --> "0..*" Answer : answered
+@enduml
+
+' ---------- 2. OBJECT DIAGRAM ----------
+@startuml Object
+object "candidate : User" as u {
+  role = STUDENT
+}
+object "midterm : Exam" as ex {
+  exam_code = 7KQ2P9
+  require_seb = true
+}
+object "sitting#42 : ExamAttempt" as at {
+  status = IN_PROGRESS
+}
+object "ev#918 : ProctoringEvent" as e1 {
+  type = phone_detected
+  severity = high
+}
+object "ev#919 : ProctoringEvent" as e2 {
+  type = gaze_away
+  severity = low
+}
+object "snap#7 : EvidenceCapture" as sn {
+  event_type = phone_detected
+}
+u --> at : takes
+ex --> at : has
+at --> e1
+at --> e2
+at --> sn
+@enduml
+
+' ---------- 3. SEQUENCE DIAGRAM ----------
+@startuml Sequence
+actor "Student Browser" as S
+participant "FastAPI" as API
+participant "Redis" as R
+database "PostgreSQL" as DB
+participant "WS Manager" as WS
+actor "Instructor" as I
+S -> API : POST /exams/join (PIN, email, UA)
+API -> R : rate-limit + SEB check
+API -> DB : validate PIN/roster, create attempt
+API --> S : attempt_id, require_seb
+S -> API : GET /attempts/{id}/exam + questions
+S -> S : start camera, load MediaPipe
+S -> API : POST face-verification (embedding)
+loop per frame / interval
+  S -> S : detect face, gaze, phone, book, audio
+end
+S -> API : POST proctoring-events (batched 5s)
+API -> DB : persist events
+API -> WS : broadcast(exam channel)
+WS --> I : live event
+note over S, API : flagged event -> one snapshot
+S -> API : POST /attempts/{id}/evidence (JPEG)
+S -> API : POST /attempts/{id}/submit
+API -> DB : status = SUBMITTED
+API -> WS : broadcast(status)
+API -> API : enqueue grade_attempt_task (Celery)
+@enduml
+
+' ---------- 4. STATE DIAGRAM ----------
+@startuml State
+[*] --> NotStarted
+NotStarted --> InProgress : join (PIN valid, SEB satisfied)
+state InProgress {
+  [*] --> Monitoring
+  Monitoring --> Warned : violation (strikes < 3)
+  Warned --> Monitoring : student resumes
+  Monitoring --> Terminated : strikes == 3
+  Warned --> Terminated : strikes == 3
+}
+InProgress --> Submitted : submit
+Terminated --> Submitted : forced close
+Submitted --> Graded : grading complete
+Graded --> [*]
+@enduml
+
+' ---------- 5. ACTIVITY DIAGRAM ----------
+@startuml Activity
+start
+:Open exam link;
+if (require_seb?) then (yes)
+  if (In Safe Exam Browser?) then (no)
+    :Block: SEB required;
+    stop
+  else (yes)
+  endif
+else (no)
+endif
+if (Face enrolled?) then (no)
+  :Guided 5-pose enrolment;
+else (yes)
+endif
+:Grant camera + enter fullscreen;
+repeat
+  :Run monitors (face, gaze, audio, object, environment);
+  if (Violation?) then (yes)
+    :Report event; snapshot if flagged;
+    if (strikes == 3?) then (yes)
+      :Terminate -> /test/blocked;
+      stop
+    else (no)
+      :Warn; resume;
+    endif
+  else (no)
+  endif
+repeat while (Submit pressed?) is (no)
+:Submit answers;
+:Celery grade (MCQ + AI short-answer);
+:Result + teacher review;
+stop
+@enduml
+
+' ---------- 6. COMPONENT DIAGRAM ----------
+@startuml Component
+package "Browser Client" {
+  [Next.js App-Router UI] as UI
+  [Proctoring hooks] as HK
+  [MediaPipe / Human WASM] as MP
+}
+package "Next.js Server" {
+  [/api/backend proxy] as PX
+  [NextAuth v5] as AU
+}
+package "FastAPI" {
+  [Routers] as RT
+  [Services] as SV
+  [Celery Workers] as WK
+}
+database "PostgreSQL" as PG
+database "Redis" as RD
+database "MinIO / S3" as S3
+cloud "Gemini API" as GM
+UI --> HK
+HK --> MP
+UI --> PX
+HK --> RT
+PX --> RT
+AU --> PX
+RT --> SV
+RT --> RD
+SV --> PG
+SV --> S3
+WK --> GM
+WK --> PG
+@enduml
+
+' ---------- 7. DEPLOYMENT DIAGRAM ----------
+@startuml Deployment
+node "Candidate / Teacher Device" {
+  [Browser + Webcam + Mic] as BR
+}
+node "Application Server" {
+  [Node.js: Next.js 16] as N
+  [uvicorn: FastAPI] as U
+  [Celery workers + beat] as C
+}
+node "Data Services" {
+  database "PostgreSQL" as PG
+  database "Redis" as RD
+  database "MinIO" as MO
+}
+cloud "Google Gemini API" as EX
+BR --> N : HTTPS / WSS
+BR --> U : HTTPS / WSS
+N --> U : HTTP
+U --> PG
+U --> RD
+U --> MO : S3 API
+C --> RD
+C --> PG
+C --> EX : HTTPS
+@enduml
