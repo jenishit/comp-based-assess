@@ -21,7 +21,7 @@ import type {
   GradeOverridePayload,
   GradeOverrideResponse,
 } from "@/types/attempt-types";
-import type { GazeSample } from "@/types/proctoring-types";
+import type { EvidenceCapture, GazeSample } from "@/types/proctoring-types";
 import type { UploadFileResponse, PresignedUploadResponse } from "@/types/upload-types";
 import type { EnrollmentPayload } from "@/types/enrollment-types";
 
@@ -152,10 +152,53 @@ export const filePresignedUploadGetService = async (): Promise<PresignedUploadRe
   return response.data;
 };
 
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with backend MAX_UPLOAD_BYTES
+
+/**
+ * Uploads a PDF straight to object storage via a presigned POST. The POST
+ * policy signed by the backend enforces the 10 MB cap and PDF content type
+ * at the storage layer; the size pre-check here just gives a friendlier
+ * error than a raw S3 policy rejection. Returns the file_id (file_key
+ * without ".pdf") used by question generation.
+ */
+export const uploadPdfDirectService = async (file: File): Promise<string> => {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("PDF is larger than the 10 MB limit");
+  }
+  const { upload_url, file_key, fields } = await filePresignedUploadGetService();
+
+  const formData = new FormData();
+  Object.entries(fields ?? {}).forEach(([key, value]) => formData.append(key, value));
+  // S3 requires the file part to come last in a presigned POST.
+  formData.append("file", file);
+
+  const uploadRes = await fetch(upload_url, { method: "POST", body: formData });
+  if (!uploadRes.ok) throw new Error("Direct upload failed");
+
+  return file_key.replace(".pdf", "");
+};
+
 export const fileUploadService = async (file: File): Promise<UploadFileResponse> => {
   const formData = new FormData();
   formData.append("file", file);
   const response = await axiosInstance.post("/files/upload", formData);
+  return response.data;
+};
+
+// ── Live monitoring (WebSocket tickets) ─────────────────────────────────────
+
+/** Mint a single-use ticket authorizing one WebSocket connection to either an
+ * attempt channel or a whole-exam channel (teacher only). */
+export const wsTicketService = async (
+  target: { attemptId: string } | { examId: string },
+): Promise<string> => {
+  const payload = "attemptId" in target ? { attempt_id: target.attemptId } : { exam_id: target.examId };
+  const response = await axiosInstance.post("/ws/ticket", payload);
+  return response.data.ticket;
+};
+
+export const attemptEvidenceListService = async (attemptId: string): Promise<EvidenceCapture[]> => {
+  const response = await axiosInstance.get(`/attempts/${attemptId}/evidence`);
   return response.data;
 };
 

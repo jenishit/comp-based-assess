@@ -11,6 +11,10 @@ import { useExamSecurity } from "@/hooks/useExamSecurity";
 import { useKeystrokeDynamics } from "@/hooks/useKeystrokeDynamics";
 import { useExamAttempt } from "@/hooks/useExamAttempt";
 import { useProctoringEventBatcher } from "@/hooks/useProctoringEventBatcher";
+import { useEnvironmentCheck } from "@/hooks/useEnvironmentCheck";
+import { useObjectDetection } from "@/hooks/useObjectDetection";
+import { useEvidenceCapturer } from "@/hooks/useEvidenceCapturer";
+import type { ProctoringEvent } from "@/types/proctoring-types";
 import ExamHeader from "../_components/ExamHeader";
 import ExamNavFooter from "../_components/ExamNavFooter";
 import ProctorPanel from "../_components/ProctorPanel";
@@ -53,13 +57,27 @@ function ExamPageContent() {
 
   const active = !submitted && !loading;
 
-  // Telemetry from both monitors is buffered locally and flushed as one
+  // Telemetry from all monitors is buffered locally and flushed as one
   // batched request every 5s (only when something was actually collected)
   // instead of one POST per event — see lib/proctoring/event-batcher.ts.
   const enqueueProctoringEvent = useProctoringEventBatcher(attemptId);
-  const proctoringState = useProctoringMonitor(videoRef, { attemptId, enabled: active, onEvent: enqueueProctoringEvent });
-  const audioState = useAudioMonitor({ attemptId, enabled: active, onEvent: enqueueProctoringEvent });
+
+  // Flagged-moment snapshots: evidence-worthy events (extra face, phone,
+  // absence/return) additionally upload one webcam frame — never a stream.
+  const maybeCaptureEvidence = useEvidenceCapturer(attemptId, videoRef);
+  const onProctoringEvent = useCallback(
+    (event: ProctoringEvent) => {
+      enqueueProctoringEvent(event);
+      maybeCaptureEvidence(event.type);
+    },
+    [enqueueProctoringEvent, maybeCaptureEvidence],
+  );
+
+  const proctoringState = useProctoringMonitor(videoRef, { attemptId, enabled: active, onEvent: onProctoringEvent });
+  const audioState = useAudioMonitor({ attemptId, enabled: active, onEvent: onProctoringEvent });
   useKeystrokeDynamics({ attemptId, enabled: active });
+  useEnvironmentCheck({ enabled: active, onEvent: onProctoringEvent });
+  useObjectDetection(videoRef, { enabled: active, onEvent: onProctoringEvent });
 
   // Stable identity — see the long comment above handleViolationRef in
   // useExamSecurity.ts for why an inline arrow function here previously

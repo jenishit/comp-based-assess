@@ -1,4 +1,3 @@
-import { updateSession } from '@/lib/session-updater'
 import axios, { InternalAxiosRequestConfig } from 'axios'
 import { getSession, signOut } from 'next-auth/react'
 
@@ -10,7 +9,6 @@ interface RequestMetadata {
 
 type RequestConfigWithMetadata = InternalAxiosRequestConfig & {
   metadata?: RequestMetadata
-  _retry?: boolean
   _skipGlobalSignOut?: boolean
 }
 
@@ -20,8 +18,15 @@ declare module 'axios' {
   }
 }
 
+/**
+ * All authenticated API traffic goes through the server-side proxy at
+ * /api/backend/* (app/api/backend/[...path]/route.ts), which injects the
+ * Authorization header from the httpOnly NextAuth cookie and transparently
+ * refreshes expired tokens. The browser never holds a backend token, so
+ * there is no client-side token cache, attach logic, or refresh queue here.
+ */
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: '/api/backend',
   withCredentials: true,
   timeout: 30000,
   headers: {
@@ -30,32 +35,9 @@ const axiosInstance = axios.create({
   },
 })
 
-export const setAuthToken = (token?: string) => {
-  if (token) {
-    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  } else {
-    delete axiosInstance.defaults.headers.common['Authorization']
-  }
-}
-
-interface QueueItem {
-  resolve: (value: string | null) => void
-  reject: (reason?: unknown) => void
-}
-
-let isRefreshing = false
-let failedQueue: QueueItem[] = []
-
-const processQueue = (error: Error | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
-  })
-  failedQueue = []
-}
+// Only one 401-triggered sign-out at a time — a burst of parallel requests
+// failing together must not stack redirects.
+let signingOut = false
 
 axiosInstance.interceptors.request.use(async (config: RequestConfigWithMetadata) => {
   config.metadata = {
@@ -63,18 +45,6 @@ axiosInstance.interceptors.request.use(async (config: RequestConfigWithMetadata)
     url: config.url,
     method: config.method,
   }
-
-  // setAuthToken() (called by AuthProvider once the session resolves) covers
-  // the common case, but a request fired before that resolves — e.g. a
-  // page's own mount-time fetch racing the session hydration — would
-  // otherwise go out with no token. Fall back to reading the session directly.
-  if (!config.headers?.Authorization) {
-    const session = await getSession()
-    if (session?.accessToken) {
-      config.headers.Authorization = `Bearer ${session.accessToken}`
-    }
-  }
-
   return config
 })
 
@@ -93,7 +63,7 @@ axiosInstance.interceptors.response.use(
   },
 
   async (error) => {
-    if (!error.config) {
+    if (!error.config || typeof window === 'undefined') {
       return Promise.reject(error)
     }
 
@@ -102,61 +72,18 @@ axiosInstance.interceptors.response.use(
       ? Date.now() - originalRequest.metadata.startTime
       : 0
 
-    if (typeof window === 'undefined') {
-      return Promise.reject(error)
-    }
-
-    const hadToken = Boolean(originalRequest.headers?.Authorization)
-
-    if (error.response?.status === 401 && hadToken && !originalRequest._retry && !originalRequest._skipGlobalSignOut) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        })
-          .then((token) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`
-            return axiosInstance(originalRequest)
-          })
-          .catch((err) => Promise.reject(err))
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        const response = await fetch(`/api/auth/refresh`, { method: 'POST' })
-
-        if (response.ok) {
-          const data = await response.json()
-
-          if (data.access_token) {
-            setAuthToken(data.access_token)
-            originalRequest.headers['Authorization'] = `Bearer ${data.access_token}`
-            processQueue(null, data.access_token)
-
-            // Persist the new tokens into the NextAuth JWT cookie too.
-            updateSession({
-              accessToken: data.access_token,
-              ...(data.refresh_token ? { refreshToken: data.refresh_token } : {}),
-            })
-
-            return axiosInstance(originalRequest)
-          }
-        }
-
-        processQueue(new Error('Token refresh failed'), null)
-        console.error('[Auth] Token refresh failed — redirecting to sign in')
+    if (error.response?.status === 401 && !originalRequest._skipGlobalSignOut && !signingOut) {
+      // The proxy already tried to refresh before forwarding — a 401 landing
+      // here means the session is genuinely dead (revoked, reused refresh
+      // token, or logged out elsewhere). Sign out only if a NextAuth session
+      // exists; exam-taking students (capability-based, no session) just see
+      // the error.
+      const session = await getSession()
+      if (session) {
+        signingOut = true
+        console.error('[Auth] Session expired — redirecting to sign in')
         await signOut({ callbackUrl: '/login' })
         return Promise.reject(error)
-
-      } catch (refreshError) {
-        processQueue(refreshError as Error, null)
-        console.error('[Auth] Token refresh error:', refreshError)
-        await signOut({ callbackUrl: '/login' })
-        return Promise.reject(refreshError)
-
-      } finally {
-        isRefreshing = false
       }
     }
 
@@ -174,23 +101,5 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-export const createAxiosInstanceWithToken = (token?: string) => {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  return axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BASE_URL,
-    withCredentials: true,
-    timeout: 30000,
-    headers,
-  })
-}
 
 export default axiosInstance

@@ -133,6 +133,11 @@ export function useProctoringMonitor(
           reportEvent({ type: "face_absent", duration: goneMs, metadata: { secondsGone: Math.round(goneMs / 1_000) } });
         }
       } else {
+        // A reappearance after a real absence is itself a flagged moment —
+        // it's the frame most likely to show *who* sat back down.
+        if (faceAbsentSinceRef.current !== null && now - faceAbsentSinceRef.current > 5_000 && canFire("face_returned", 10_000)) {
+          reportEvent({ type: "face_returned", metadata: { secondsGone: Math.round((now - faceAbsentSinceRef.current) / 1_000) } });
+        }
         faceAbsentSinceRef.current = null;
       }
 

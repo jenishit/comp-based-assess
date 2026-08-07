@@ -188,6 +188,68 @@ export const useExamSecurity = ({
     const preventContextMenu = (e: MouseEvent) => e.preventDefault();
     document.addEventListener('contextmenu', preventContextMenu);
 
+    // ── Clipboard lockdown ────────────────────────────────────────────────
+    // Copy/cut/paste are all blocked outright during the exam (not merely
+    // logged): copying leaks question content, pasting defeats the point of
+    // typing an answer. Each blocked attempt is reported (throttled — holding
+    // Ctrl+V down shouldn't flood the event log).
+    const lastClipboardReportRef = { current: 0 };
+    const reportBlocked = (type: 'copy_blocked' | 'paste_blocked' | 'shortcut_blocked' | 'back_navigation_blocked', metadata?: Record<string, unknown>) => {
+      const now = Date.now();
+      if (now - lastClipboardReportRef.current < 2000) return;
+      lastClipboardReportRef.current = now;
+      reportProctoringEvent(attemptId, { type, timestamp: now, metadata }).catch(() => {});
+    };
+
+    const blockCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      reportBlocked('copy_blocked');
+    };
+    const blockPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      reportBlocked('paste_blocked', { charCount: e.clipboardData?.getData('text').length ?? 0 });
+    };
+    document.addEventListener('copy', blockCopy);
+    document.addEventListener('cut', blockCopy);
+    document.addEventListener('paste', blockPaste);
+
+    // ── Shortcut lockdown ─────────────────────────────────────────────────
+    // DevTools (F12 / Ctrl+Shift+I/J/C), view-source (Ctrl+U), save (Ctrl+S)
+    // and print (Ctrl+P) shortcuts are swallowed. This raises the bar rather
+    // than making DevTools impossible (the browser menu still works — that
+    // path is caught by the fullscreen-exit + window-size heuristic instead).
+    const blockShortcuts = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const devtools = e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key));
+      const leakage = e.ctrlKey && !e.shiftKey && ['u', 's', 'p'].includes(key);
+      if (devtools || leakage) {
+        e.preventDefault();
+        e.stopPropagation();
+        reportBlocked('shortcut_blocked', { key: e.key, ctrl: e.ctrlKey, shift: e.shiftKey });
+      }
+    };
+    // Capture phase so page-level handlers can't see the event first.
+    window.addEventListener('keydown', blockShortcuts, true);
+
+    // ── Back-navigation trap ──────────────────────────────────────────────
+    // Push a sentinel history entry; when Back fires popstate, immediately
+    // re-push so the exam page stays put, and log the attempt.
+    history.pushState({ examLock: true }, '', window.location.href);
+    const onPopState = () => {
+      history.pushState({ examLock: true }, '', window.location.href);
+      reportBlocked('back_navigation_blocked');
+    };
+    window.addEventListener('popstate', onPopState);
+
+    // ── Unload warning ────────────────────────────────────────────────────
+    // Native confirm dialog on refresh/close — the batcher's pagehide beacon
+    // still flushes buffered telemetry if the student leaves anyway.
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+
     // Fallback focus poll — on some multi-monitor + fullscreen combinations,
     // switching to a window on another display doesn't reliably fire `blur`
     // or `visibilitychange` at all. document.hasFocus() is a direct,
@@ -206,9 +268,15 @@ export const useExamSecurity = ({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', confirmBlur);
       document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('copy', blockCopy);
+      document.removeEventListener('cut', blockCopy);
+      document.removeEventListener('paste', blockPaste);
+      window.removeEventListener('keydown', blockShortcuts, true);
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('beforeunload', onBeforeUnload);
       clearInterval(focusPollId);
     };
-  }, [enabled]);
+  }, [enabled, attemptId]);
 
   useEffect(() => {
     if (!enabled) return;

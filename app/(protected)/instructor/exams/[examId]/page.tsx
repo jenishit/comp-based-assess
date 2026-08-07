@@ -10,6 +10,7 @@ import RosterPanel from "./_components/RosterPanel";
 import ExamStats from "./_components/ExamStats";
 import StudentList from "./_components/StudentList";
 import AvailabilityBadge from "../_components/AvailabilityBadge";
+import { useExamLiveMonitor } from "@/hooks/useExamLiveMonitor";
 
 export default function ExamDetailPage() {
   const params = useParams();
@@ -20,6 +21,10 @@ export default function ExamDetailPage() {
   const [generationStatus, setGenerationStatus] = useState<QuestionJob["status"] | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+
+  // Live roster: subscribe once the exam id is known so event counts, new
+  // joiners, and submissions update without a page refresh.
+  const liveAttempts = useExamLiveMonitor(examId || null);
 
   useEffect(() => {
     if (!examId) return;
@@ -144,7 +149,11 @@ export default function ExamDetailPage() {
         <RosterPanel examId={exam.id} groupLinked={Boolean(exam.group_id)} />
       </div>
 
-      <StudentList students={exam.students ?? []} />
+      <StudentList
+        students={exam.students ?? []}
+        live={liveAttempts}
+        liveConnected={Object.keys(liveAttempts).length > 0 || exam.status === "active"}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 export type ProctoringEventType =
   | "face_absent"
+  | "face_returned"
   | "multiple_faces"
   | "gaze_away"
   | "gaze_returned"
@@ -15,7 +16,21 @@ export type ProctoringEventType =
   | "session_terminated"
   | "keystroke_batch"
   | "gaze_sample"
-  | "devtools_opened";
+  | "devtools_opened"
+  // Lockdown enforcement (the action was prevented, then logged)
+  | "copy_blocked"
+  | "paste_blocked"
+  | "back_navigation_blocked"
+  | "shortcut_blocked"
+  // Environment checks
+  | "vm_detected"
+  | "multiple_monitors"
+  | "screen_capture_detected"
+  | "seb_detected"
+  | "environment_check"
+  // Object detection
+  | "phone_detected"
+  | "book_detected";
 
 export interface ProctoringEvent {
   type: ProctoringEventType;
@@ -58,3 +73,33 @@ export interface GazeSample {
   direction?: string;
   duration?: number;
 }
+
+/** A flagged-moment webcam snapshot, served with a short-lived presigned URL. */
+export interface EvidenceCapture {
+  id: string;
+  event_type: ProctoringEventType;
+  severity: "low" | "medium" | "high";
+  timestamp: number;
+  content_type: string;
+  url: string;
+}
+
+/** Message shape broadcast on the exam-level live WebSocket channel. */
+export type ExamLiveMessage =
+  | {
+      kind: "proctoring_event";
+      attempt_id: string;
+      type: ProctoringEventType;
+      severity: "low" | "medium" | "high";
+      timestamp: number;
+      duration?: number | null;
+      metadata?: Record<string, unknown> | null;
+    }
+  | {
+      kind: "attempt_status";
+      attempt_id: string;
+      status: "in_progress" | "submitted";
+      student_name?: string;
+      student_email?: string;
+    }
+  | { kind: "evidence_captured"; attempt_id: string; event_type: ProctoringEventType; timestamp: number };

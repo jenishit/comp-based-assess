@@ -1,5 +1,4 @@
 "use client"
-import { setAuthToken } from '@/axios/instance';
 import { getMe } from '@/services/auth-service';
 import { useUserStore } from '@/stores/user-store';
 import { signOut, useSession } from 'next-auth/react';
@@ -24,15 +23,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Wait for the session to resolve before deciding anything.
     if (status === "loading") return;
 
-    // The session just settled or changed — drop the axios token cache so the
-    // next request re-reads it (covers SPA sign-in/-out without a full reload).
-    setAuthToken(session?.accessToken);
-
-    // `status` can be "authenticated" while the session still carries no
-    // accessToken (a stale cookie, or a token that expired but the session
-    // hasn't been cleared yet). Without a token there's nothing to fetch.
-    const token = session?.accessToken;
-    if (status === "unauthenticated" || !token) {
+    // Backend tokens never reach the client anymore — the /api/backend proxy
+    // injects them server-side — so an authenticated status is all we need.
+    if (status === "unauthenticated") {
       clear();
       return;
     }
@@ -60,7 +53,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       cancelled = true;
     };
-  }, [status, session, session?.accessToken, setUser, setLoading, clear]);
+  }, [status, session, setUser, setLoading, clear]);
 
   return <>{children}</>;
 }

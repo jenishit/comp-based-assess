@@ -12,6 +12,7 @@ import AnswerList from "./_components/AnswerList";
 import ProctoringEventsList from "./_components/ProctoringEventsList";
 import MLReviewPanel from "./_components/MLReviewPanel";
 import GradingPanel from "./_components/GradingPanel";
+import EvidenceGallery from "./_components/EvidenceGallery";
 
 // Mirrors app/schemas/_mappers.py's PROCTORING_SEVERITY — used only for an
 // optimistic client-side severity label until the next full refresh.
@@ -112,6 +113,7 @@ export default function AttemptDetailPage() {
         <GazePlot samples={gazeSamples} />
       </div>
 
+      <EvidenceGallery attemptId={attemptId} />
       <AnswerList answers={answers} />
       <GradingPanel attemptId={attemptId} reviews={reviews} onScoreUpdated={handleScoreUpdated} />
       <MLReviewPanel reviews={ml_reviews} />

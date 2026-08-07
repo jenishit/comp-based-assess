@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newExamSchema } from "@/schemas/new-exam-schema";
 import { Loader2, Check } from "lucide-react";
-import { examCreateService, filePresignedUploadGetService, questionGenerateService } from "@/services/exam-service";
+import { examCreateService, questionGenerateService, uploadPdfDirectService } from "@/services/exam-service";
 import { toast } from "sonner";
 import type z from "zod";
 import UploadStep from "./_components/UploadStep";
@@ -49,22 +49,13 @@ export default function CreateExamPage() {
     setFile(f);
     setUploading(true);
     try {
-      const { upload_url, file_key } = await filePresignedUploadGetService();
-
-      const uploadRes = await fetch(upload_url, {
-        method: "PUT",
-        body: f,
-        headers: { "Content-Type": "application/pdf" },
-      });
-
-      if (!uploadRes.ok) throw new Error("Direct upload failed");
-
-      setFileId(file_key.replace(".pdf", ""));
+      const fileId = await uploadPdfDirectService(f);
+      setFileId(fileId);
       setStep("details");
       toast.success("PDF uploaded successfully");
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error("Failed to upload file");
+      toast.error(err instanceof Error ? err.message : "Failed to upload file");
     } finally {
       setUploading(false);
     }

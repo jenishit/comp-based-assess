@@ -68,7 +68,10 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.accessToken = user.accessToken
         token.refreshToken = user.refreshToken
-        token.accessTokenExpires = Date.now() + 60 * 60 * 1000
+        // 55min, not 60: refresh before the backend's 60-minute expiry so a
+        // token never goes out already dead (kept in sync with the
+        // /api/backend proxy's ACCESS_TOKEN_LIFETIME_MS).
+        token.accessTokenExpires = Date.now() + 55 * 60 * 1000
         token.role = user.role
         token.name = user.name
         token.user_id = user.id
@@ -96,7 +99,7 @@ export const authConfig: NextAuthConfig = {
         const refreshed = await res.json()
         token.accessToken = refreshed.access_token
         token.refreshToken = refreshed.refresh_token
-        token.accessTokenExpires = Date.now() + 60 * 60 * 1000
+        token.accessTokenExpires = Date.now() + 55 * 60 * 1000
         delete token.error
       } catch (e) {
         console.error('[auth] token refresh failed:', e)
@@ -106,16 +109,14 @@ export const authConfig: NextAuthConfig = {
     },
 
     async session({ session, token }) {
-      // Surface the refresh error, but keep attaching the last-known token below
-      // regardless — dropping it here would send subsequent requests out with no
-      // Authorization header at all (a bare, confusing 401) instead of the last
-      // (now-invalid) token, which yields a real backend-validated 401 and lets
-      // the axios interceptor's single sign-out path handle it.
       if (token.error === 'RefreshAccessTokenError') {
         session.error = 'RefreshAccessTokenError';
       }
-      session.accessToken = token.accessToken
-      session.refreshToken = token.refreshToken
+      // SECURITY: accessToken/refreshToken deliberately do NOT get copied
+      // onto the session — the session object is readable by any client-side
+      // JS (an XSS would exfiltrate the tokens). They stay inside the
+      // encrypted httpOnly JWT cookie; the /api/backend proxy route decrypts
+      // it server-side and injects the Authorization header there.
       session.name = token.name
       session.user_id = token.user_id
       session.session_id = token.session_id
@@ -124,6 +125,27 @@ export const authConfig: NextAuthConfig = {
       session.role_id = token.role_id
 
       return session
+    },
+  },
+
+  events: {
+    async signOut(message) {
+      // Clearing the cookie alone would leave the backend tokens valid until
+      // they expire — tell the backend to revoke them too.
+      const token = 'token' in message ? message.token : null
+      if (!token?.refreshToken) return
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token.accessToken ? { Authorization: `Bearer ${token.accessToken}` } : {}),
+          },
+          body: JSON.stringify({ refresh_token: token.refreshToken }),
+        })
+      } catch {
+        // Best-effort — the tokens still die at their natural expiry.
+      }
     },
   },
 
