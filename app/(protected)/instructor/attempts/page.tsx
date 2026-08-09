@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { attemptService } from "@/services/exam-service";
-import type { AttemptSummary } from "@/types/exam";
-import { ClipboardList, Clock, Check, X as XIcon } from "lucide-react";
+import { attemptListService } from "@/services/exam-service";
+import type { AttemptSummary } from "@/types/attempt-types";
+import { ClipboardList, Clock, Check } from "lucide-react";
 import Link from "next/link";
 
 const statusBadge: Record<string, string> = {
@@ -17,14 +17,14 @@ export default function AttemptsListPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    attemptService.list().then(setAttempts).catch(() => {}).finally(() => setLoading(false));
+    attemptListService().then(setAttempts).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-espresso tracking-tight">My Attempts</h1>
-        <p className="text-bark text-sm mt-1">View your past exam attempts and results.</p>
+        <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">All Attempts</h1>
+        <p className="text-bark text-sm mt-1">Every attempt across the exams you&apos;ve created.</p>
       </div>
 
       {loading ? (
@@ -32,18 +32,18 @@ export default function AttemptsListPage() {
           {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       ) : attempts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
+        <div className="text-center py-16 bg-card rounded-xl border border-sand-border">
           <ClipboardList size={40} className="mx-auto text-sand mb-3" />
           <h3 className="text-base font-medium text-espresso mb-1">No attempts yet</h3>
-          <p className="text-sm text-bark">Join an exam to start your first attempt.</p>
+          <p className="text-sm text-bark">Attempts will appear here once students take one of your exams.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {attempts.map((a) => (
             <Link
               key={a.attempt_id}
-              href={`/dashboard/attempts/${a.attempt_id}`}
-              className="block bg-white rounded-xl border border-sand-border p-4 hover:border-sage transition-colors no-underline"
+              href={`/instructor/attempts/${a.attempt_id}`}
+              className="block bg-card rounded-xl border border-sand-border p-4 hover:border-sage transition-colors no-underline"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">

@@ -1,6 +1,5 @@
 import AuthProvider from "@/providers/AuthProvider";
 import Navbar from "../_components/Navbar";
-import Footer from "../_components/Footer";
 
 
 export default function DashboardLayout({
@@ -21,7 +20,6 @@ export default function DashboardLayout({
         <main id="main" className="flex-1">
           {children}
         </main>
-        <Footer />
       </AuthProvider>
     </>
   );

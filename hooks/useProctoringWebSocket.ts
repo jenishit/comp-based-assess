@@ -1,38 +1,28 @@
-import { useEffect, useRef } from "react";
-import type { ProctoringEvent } from "@/types/exam";
-
-// Next.js rewrites don't reliably proxy WebSocket upgrade requests, so this
-// connects directly to the backend origin rather than through /api/v1.
-function wsUrlFor(attemptId: string): string {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:8001/api/v1";
-  return `${base.replace(/^http/, "ws")}/ws/attempts/${attemptId}`;
-}
+import { useCallback } from "react";
+import type { ProctoringEvent } from "@/types/proctoring-types";
+import { useLiveChannel } from "@/hooks/useLiveChannel";
 
 interface UseProctoringWebSocketOptions {
   attemptId: string | null;
   onEvent: (event: ProctoringEvent) => void;
 }
 
-/** Subscribes to live proctoring events for one attempt over a WebSocket. */
+/** Subscribes to live proctoring events for one attempt (teacher side).
+ * Thin wrapper over useLiveChannel that filters to proctoring events. */
 export function useProctoringWebSocket({ attemptId, onEvent }: UseProctoringWebSocketOptions): void {
-  const onEventRef = useRef(onEvent);
-  useEffect(() => {
-    onEventRef.current = onEvent;
-  }, [onEvent]);
+  const onMessage = useCallback(
+    (payload: unknown) => {
+      const message = payload as { kind?: string } & ProctoringEvent;
+      // The channel also carries evidence_captured / attempt_status frames;
+      // this hook's consumers only want the event stream.
+      if (message.kind && message.kind !== "proctoring_event") return;
+      onEvent(message);
+    },
+    [onEvent],
+  );
 
-  useEffect(() => {
-    if (!attemptId) return;
-
-    const ws = new WebSocket(wsUrlFor(attemptId));
-
-    ws.onmessage = (msg) => {
-      try {
-        onEventRef.current(JSON.parse(msg.data) as ProctoringEvent);
-      } catch {
-        /* ignore malformed frames */
-      }
-    };
-
-    return () => ws.close();
-  }, [attemptId]);
+  useLiveChannel({
+    target: attemptId ? { attemptId } : null,
+    onMessage,
+  });
 }

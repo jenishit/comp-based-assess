@@ -1,0 +1,1158 @@
+<title>CBA System — Analysis, Design, Implementation & Testing</title>
+<style>
+  :root {
+    --paper: #f5f7f4;
+    --ink: #1a211d;
+    --muted: #5c6862;
+    --forest: #2f5d50;
+    --sage: #6f8f83;
+    --clay: #a9552f;
+    --line: #dbe1da;
+    --card: #ffffff;
+    --code-bg: #eef1ec;
+    --chip: #e7ede9;
+    --maxw: 46rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10140f;
+      --ink: #e7ece6;
+      --muted: #9aa79f;
+      --forest: #86b7a6;
+      --sage: #8fae9f;
+      --clay: #d98c66;
+      --line: #28322b;
+      --card: #161c17;
+      --code-bg: #171d18;
+      --chip: #1d251f;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f5f7f4; --ink: #1a211d; --muted: #5c6862; --forest: #2f5d50;
+    --sage: #6f8f83; --clay: #a9552f; --line: #dbe1da; --card: #ffffff;
+    --code-bg: #eef1ec; --chip: #e7ede9;
+  }
+  :root[data-theme="dark"] {
+    --paper: #10140f; --ink: #e7ece6; --muted: #9aa79f; --forest: #86b7a6;
+    --sage: #8fae9f; --clay: #d98c66; --line: #28322b; --card: #161c17;
+    --code-bg: #171d18; --chip: #1d251f;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+
+  h1, h2, h3, h4, .eyebrow, th, .chip, .algo-title, figcaption, .toc {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 2rem; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; margin: 0 0 .3rem; }
+  h2 {
+    font-size: 1.4rem; letter-spacing: -0.01em; text-wrap: balance;
+    margin: 3.4rem 0 1rem; padding-top: 1.4rem; border-top: 2px solid var(--forest);
+  }
+  h3 { font-size: 1.12rem; margin: 2.2rem 0 .6rem; color: var(--ink); text-wrap: balance; }
+  h4 { font-size: .98rem; margin: 1.5rem 0 .4rem; color: var(--forest); letter-spacing: .01em; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--forest); }
+  strong { color: var(--ink); }
+
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: .16em; font-size: .72rem;
+    font-weight: 600; color: var(--forest); margin: 0 0 .8rem;
+  }
+  .lede { font-size: 1.05rem; color: var(--muted); margin-bottom: 2rem; }
+  .meta { font-size: .85rem; color: var(--muted); font-family: "Segoe UI", system-ui, sans-serif; }
+
+  .toc {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1.1rem 1.4rem; margin: 2rem 0 1rem; font-size: .9rem;
+  }
+  .toc h4 { margin: 0 0 .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: .7rem; }
+  .toc ol { margin: 0; padding-left: 1.2rem; columns: 2; column-gap: 2rem; }
+  .toc li { margin: .18rem 0; break-inside: avoid; }
+  .toc a { text-decoration: none; color: var(--ink); }
+  .toc a:hover { color: var(--forest); text-decoration: underline; }
+
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin: .3rem 0; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 1rem 0 1.6rem;
+    font-family: "Segoe UI", system-ui, sans-serif; font-size: .84rem; line-height: 1.45;
+  }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0 1.6rem; }
+  .scroll table { margin: 0; min-width: 40rem; }
+  th, td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid var(--line); }
+  th { background: var(--chip); font-weight: 600; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.id { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; color: var(--forest); }
+  tr:last-child td { border-bottom: none; }
+  .pass { color: var(--forest); font-weight: 600; }
+
+  .chip {
+    display: inline-block; font-size: .72rem; font-weight: 600; padding: .12rem .5rem;
+    border-radius: 999px; background: var(--chip); color: var(--forest); border: 1px solid var(--line);
+  }
+
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; }
+  pre.algo {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; margin: .6rem 0 1.6rem;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .82rem; line-height: 1.55; color: var(--ink);
+  }
+  .algo-title { font-size: .8rem; font-weight: 700; letter-spacing: .02em; color: var(--forest); margin: 1.4rem 0 .1rem; text-transform: uppercase; }
+
+  figure { margin: 1.4rem 0 1.8rem; }
+  figure .scroll { margin: 0; }
+  pre.mermaid {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1.2rem; margin: 0; text-align: center; min-width: 34rem;
+  }
+  figcaption { font-size: .8rem; color: var(--muted); margin-top: .55rem; text-align: center; }
+  figcaption b { color: var(--forest); font-weight: 600; }
+
+  details { margin: -.6rem 0 1.4rem; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  summary { cursor: pointer; padding: .55rem .9rem; font-family: "Segoe UI", system-ui, sans-serif; font-size: .82rem; color: var(--muted); }
+  details[open] summary { border-bottom: 1px solid var(--line); }
+  details pre { margin: 0; padding: .9rem 1.1rem; overflow-x: auto; background: var(--code-bg); font-family: ui-monospace, Consolas, monospace; font-size: .78rem; line-height: 1.5; border-radius: 0 0 8px 8px; }
+
+  .note {
+    background: var(--chip); border: 1px solid var(--line); border-radius: 8px;
+    padding: .8rem 1rem; margin: 1rem 0 1.6rem; font-size: .88rem;
+  }
+  hr { border: none; border-top: 1px solid var(--line); margin: 3rem 0; }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .wrap { padding: 2.5rem 1.1rem 4rem; }
+    .toc ol { columns: 1; }
+    h1 { font-size: 1.6rem; }
+  }
+  @media print {
+    :root { --paper: #fff; --card: #fff; --ink: #000; --muted: #333; --line: #bbb; --chip: #f0f0f0; --code-bg: #f4f4f4; }
+    body { font-size: 11pt; }
+    .wrap { max-width: none; padding: 0; }
+    h2 { page-break-after: avoid; }
+    figure, table, pre.algo, details { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    details { border: none; } details summary { display: none; } details pre { display: block; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Final Year Project — Documentation Excerpt</p>
+  <h1>AI-Assisted Computer-Based Assessment with In-Browser Proctoring</h1>
+  <p class="lede">System Analysis, System Design, Implementation, and Testing for a web-based examination platform that generates questions with AI, proctors candidates through the browser, and grades responses semantically.</p>
+  <p class="meta">Chapters 3–6 · Diagrams rendered inline · StarUML model provided separately (<code>cba-class-model.mdj</code>)</p>
+
+  <nav class="toc">
+    <h4>Contents</h4>
+    <ol>
+      <li><a href="#c3">3. System Analysis</a></li>
+      <li><a href="#fr">3.1.1(i) Functional Requirements</a></li>
+      <li><a href="#nfr">3.1.1(ii) Non-Functional Requirements</a></li>
+      <li><a href="#feas">3.1.2 Feasibility Analysis</a></li>
+      <li><a href="#c4">4. System Design</a></li>
+      <li><a href="#usecase">Use Case Diagram</a></li>
+      <li><a href="#class">Class Diagram</a></li>
+      <li><a href="#object">Object Diagram</a></li>
+      <li><a href="#er">ER Diagram</a></li>
+      <li><a href="#seq">Sequence Diagrams (×4)</a></li>
+      <li><a href="#state">State Diagrams (×4)</a></li>
+      <li><a href="#activity">Activity Diagrams (×2)</a></li>
+      <li><a href="#component">Component Diagram</a></li>
+      <li><a href="#deploy">Deployment Diagram</a></li>
+      <li><a href="#algo">Algorithm Details</a></li>
+      <li><a href="#c5">5. Implementation & Testing</a></li>
+      <li><a href="#tools">5.1.1 Tools Used</a></li>
+      <li><a href="#modules">5.1.2 Module Details</a></li>
+      <li><a href="#unit">5.2.1 Unit Test Cases</a></li>
+      <li><a href="#system">5.2.2 System Test Cases</a></li>
+      <li><a href="#result">5.3 Result Analysis</a></li>
+      <li><a href="#c6">6. Conclusion & Future Work</a></li>
+    </ol>
+  </nav>
+
+  <!-- ================= CHAPTER 3 ================= -->
+  <h2 id="c3">Chapter 3 · System Analysis</h2>
+
+  <h3>3.1 System Analysis</h3>
+  <p>The system is a browser-based examination platform with three actors — the <strong>teacher</strong> (examiner), the <strong>student</strong> (candidate), and the <strong>system</strong> itself (automated proctoring, grading and background workers). A teacher uploads course material as a PDF, from which the system generates multiple-choice and short-answer questions using a large language model. Students join an exam with a short PIN, take it under continuous in-browser proctoring, and receive AI-assisted grades that a teacher can review. The analysis below fixes the requirements the software must satisfy and establishes that building it is feasible.</p>
+
+  <h3 id="req">3.1.1 Requirement Analysis</h3>
+
+  <h4 id="fr">i. Functional Requirements</h4>
+  <p>Functional requirements state <em>what</em> the system does. They are grouped by module and each is independently verifiable.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Requirement</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="id">FR-1</td><td>Account &amp; session management</td><td>Register and authenticate teachers and students; issue short-lived access tokens with rotating, revocable refresh tokens; log out (server-side revocation); change password with current-password re-authentication; enforce role-based access to teacher-only endpoints.</td></tr>
+      <tr><td class="id">FR-2</td><td>Exam authoring</td><td>A teacher creates an exam, uploads a source PDF (≤ 10 MB), and the system generates MCQ and short-answer questions with Bloom-level tags via an LLM. The teacher sets duration, an optional recurring availability window, subject/group linkage, and a "require Safe Exam Browser" flag.</td></tr>
+      <tr><td class="id">FR-3</td><td>Roster &amp; access control</td><td>Restrict joining by opt-in email roster or by group membership; auto-provision guest student accounts on first join; access an attempt via its capability identifier.</td></tr>
+      <tr><td class="id">FR-4</td><td>Exam taking</td><td>Join by 6-character PIN, resume an in-progress attempt, autosave answers (debounced), flag questions, and submit. Enforce the availability window and SEB requirement at join.</td></tr>
+      <tr><td class="id">FR-5</td><td>Identity verification</td><td>Enrol a student's face once from five guided poses (1024-d embeddings, no raw image stored); capture one embedding during the exam for advisory match against enrolment.</td></tr>
+      <tr><td class="id">FR-6</td><td>Proctoring &amp; lockdown</td><td>Detect and log: face absence, multiple faces, gaze direction, voice / multiple speakers, mobile phones and books (object detection), virtual machines, multiple monitors, Safe Exam Browser, and in-page screen capture. Enforce fullscreen, block tab-switching, copy/cut/paste, DevTools/print shortcuts, back-navigation, and right-click; terminate on a three-strike rule.</td></tr>
+      <tr><td class="id">FR-7</td><td>Evidence capture</td><td>Capture a single webcam snapshot only at flagged moments (extra/absent/returned face, phone, book, termination), throttled and quota-bounded; never continuous recording.</td></tr>
+      <tr><td class="id">FR-8</td><td>Live invigilation</td><td>Stream proctoring events and attempt-lifecycle changes to the teacher in real time over an authenticated WebSocket, powering a live roster dashboard.</td></tr>
+      <tr><td class="id">FR-9</td><td>Grading</td><td>Grade MCQs deterministically and short answers semantically with an LLM (score, correctness, feedback); allow a teacher to override any mark (human-in-the-loop).</td></tr>
+      <tr><td class="id">FR-10</td><td>Reporting</td><td>Present per-attempt answers, a proctoring-event timeline, a gaze scatter plot, an evidence gallery, ML review records, and an aggregated academic performance report.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4 id="nfr">ii. Non-Functional Requirements</h4>
+  <p>Non-functional requirements constrain <em>how well</em> the system performs its functions — the quality attributes an examiner cares about.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Attribute</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td class="id">NFR-1</td><td>Security</td><td>Backend tokens never exposed to page JavaScript (held in an encrypted, httpOnly cookie and injected by a server-side proxy); JWT rotation with reuse detection and a Redis revocation list; per-IP rate limiting on login, registration, refresh and exam-join; strict Content-Security-Policy and framing / MIME / referrer headers; upload validation by magic bytes and size; single-use WebSocket auth tickets.</td></tr>
+      <tr><td class="id">NFR-2</td><td>Performance</td><td>UI interactions respond within ~100 ms; proctoring telemetry is throttled per event type and batched (one request per 5 s); answers autosave on a 600 ms debounce; webcam runs at 320×240 and object detection at a sparse 2.5 s interval to bound CPU/GPU cost.</td></tr>
+      <tr><td class="id">NFR-3</td><td>Scalability</td><td>Stateless JWT API scales horizontally; heavy work (question generation, grading, ML review) is offloaded to Celery workers; Redis backs rate limiting, tickets and revocation. (The in-process WebSocket manager is single-worker; multi-worker fan-out via Redis pub/sub is a documented upgrade.)</td></tr>
+      <tr><td class="id">NFR-4</td><td>Reliability</td><td>Rate limiter and token store fail open on a Redis outage so a cache failure never locks out authentication; grading tasks retry with exponential backoff; the live WebSocket reconnects with backoff and a heartbeat.</td></tr>
+      <tr><td class="id">NFR-5</td><td>Usability</td><td>Guided enrolment, clear violation warnings before termination, one-click PIN sharing, and non-blocking error toasts; the exam surface is distraction-free.</td></tr>
+      <tr><td class="id">NFR-6</td><td>Privacy</td><td>No continuous screen or video recording; only 1024-d face embeddings leave the browser, never raw frames; evidence is limited to flagged-moment snapshots governed by an allowlist and per-attempt quotas.</td></tr>
+      <tr><td class="id">NFR-7</td><td>Maintainability</td><td>Modular routers/services/hooks, fully typed (TypeScript + Pydantic), 54 automated unit tests, structured JSON logging with request IDs, and global exception handlers.</td></tr>
+      <tr><td class="id">NFR-8</td><td>Portability</td><td>Containerised (Docker Compose); S3-compatible object storage (MinIO locally, AWS S3 in production unchanged); runs on any modern Chromium/Firefox browser with a webcam.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="feas">3.1.2 Feasibility Analysis</h3>
+
+  <h4>i. Technical Feasibility</h4>
+  <p>The project stands on mature, well-supported technologies: Next.js 16 / React 19 on the client, FastAPI with SQLAlchemy on the server, PostgreSQL, Redis and MinIO for data, and Celery for background work. All proctoring inference (face landmarks, gaze, object detection) runs <em>in the browser</em> via MediaPipe Tasks Vision (WebAssembly + WebGL) and <code>@vladmandic/human</code>, so no server-side GPU is required — a decisive simplification. The browser APIs relied upon — <code>getUserMedia</code>, WebGL, WebAssembly, WebSocket, the Fullscreen and Clipboard APIs — are supported by all current target browsers. The remaining technical risks are known and bounded: tuning the Content-Security-Policy for the WASM pipelines, the camera-permission requirement, and the single-worker WebSocket limitation (with a clear Redis-pub/sub upgrade path). The project is therefore technically feasible.</p>
+
+  <h4>ii. Operational Feasibility</h4>
+  <p>The workflow maps directly onto how examinations already run: a teacher prepares an exam and shares a PIN; students join and sit it; results and an invigilation record follow. Learning curve is minimal — teachers manage exams from a dashboard, students need only a PIN and a webcam. The privacy-first design (snapshots at flagged moments rather than full-screen recording) materially improves candidate acceptance and eases institutional data-protection sign-off. For high-stakes papers the teacher can require Safe Exam Browser. The main operational dependency is a candidate device with a working webcam and modern browser; where hardware is weak the system degrades gracefully (telemetry is throttled, detection sparse). The system is operationally feasible for a single-institution deployment.</p>
+
+  <h4>iii. Economic Feasibility</h4>
+  <p>Development cost is principally student time. The runtime stack is almost entirely free and open-source and self-hosted, so there is no per-candidate proctoring licence — commercial live-proctoring services typically charge on the order of US$8–15 per candidate per exam. The only metered dependency is the LLM API (Google Gemini) used for question generation and short-answer grading, whose cost is a few US cents per exam and is incurred only at authoring and grading time, not during invigilation. Indicative running costs are below.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Item</th><th>Basis</th><th>Indicative cost</th></tr></thead>
+    <tbody>
+      <tr><td>Web / API / worker hosting</td><td>1 small VM (self-host or cloud)</td><td>Free (lab) – ~US$10–20/mo</td></tr>
+      <tr><td>PostgreSQL, Redis, MinIO</td><td>Open-source, co-hosted</td><td>US$0 (licence)</td></tr>
+      <tr><td>LLM question generation</td><td>Per exam authored</td><td>~US$0.02–0.10 / exam</td></tr>
+      <tr><td>LLM short-answer grading</td><td>Per short answer</td><td>~US$0.005 / answer</td></tr>
+      <tr><td>Proctoring inference</td><td>Runs on candidate device</td><td>US$0 (no server GPU)</td></tr>
+      <tr><td>Commercial live proctoring (avoided)</td><td>Per candidate per exam</td><td>~US$8–15 / candidate</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Because the largest cost of comparable systems — human or licensed proctoring — is eliminated, the project is economically feasible and materially cheaper to operate than commercial alternatives.</p>
+
+  <h4>iv. Schedule Feasibility</h4>
+  <p>The work decomposes into sequential-but-overlapping phases that fit a single academic project timeline. Each phase produced a demonstrable increment, de-risking the schedule.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Phase</th><th>Activities</th><th>Duration</th></tr></thead>
+    <tbody>
+      <tr><td class="id">P1</td><td>Requirement study, technology selection, data model &amp; schema (Alembic)</td><td>Weeks 1–3</td></tr>
+      <tr><td class="id">P2</td><td>Authentication, exam authoring, PDF upload, AI question generation</td><td>Weeks 3–6</td></tr>
+      <tr><td class="id">P3</td><td>Exam-taking flow, autosave, submission, deterministic + semantic grading</td><td>Weeks 6–9</td></tr>
+      <tr><td class="id">P4</td><td>Proctoring pipeline: face/gaze/audio/object/environment, lockdown, evidence</td><td>Weeks 9–13</td></tr>
+      <tr><td class="id">P5</td><td>Security hardening, live invigilation, SEB gate, testing &amp; documentation</td><td>Weeks 13–16</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The phasing kept a working product available throughout and reserved the final phase for hardening and verification, so the schedule is feasible.</p>
+
+  <!-- ================= CHAPTER 4 ================= -->
+  <h2 id="c4">Chapter 4 · System Design</h2>
+  <p>The design is expressed through the standard UML views below, covering both actor types — the <strong>teacher</strong> (examiner) and the <strong>student</strong> (candidate). Structural views (use-case, class, object, component, deployment) show what the system is made of and where it runs; behavioural views (sequence, state, activity) show how it behaves. Diagrams are grouped by type; PlantUML sources for the structural diagrams accompany them, and the full set is provided in <code>diagrams.puml</code>.</p>
+
+  <h3 id="usecase">Use Case Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart LR
+  T([Teacher])
+  S([Student])
+  subgraph SYS[CBA System]
+    UC1((Register / Login))
+    UC2((Author exam))
+    UC3((Upload course PDF))
+    UC4((Generate questions with AI))
+    UC5((Manage roster / groups))
+    UC6((Configure SEB / schedule))
+    UC7((Invigilate live))
+    UC8((Review / override grades))
+    UC9((View reports and evidence))
+    UC10((Join exam by PIN))
+    UC11((Enrol face))
+    UC12((Take proctored exam))
+    UC13((Submit answers))
+    UC14((View own result))
+  end
+  T --- UC1
+  T --- UC2
+  T --- UC3
+  T --- UC4
+  T --- UC5
+  T --- UC6
+  T --- UC7
+  T --- UC8
+  T --- UC9
+  S --- UC1
+  S --- UC10
+  S --- UC11
+  S --- UC12
+  S --- UC13
+  S --- UC14
+</pre>
+    </div>
+    <figcaption><b>Figure 4.1</b> — Use cases for both actors. The teacher authors and invigilates; the student joins, enrols and sits the exam. Registration/login is shared. Grading is a system responsibility triggered on submission.</figcaption>
+  </figure>
+
+  <h3 id="class">Class Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+classDiagram
+  class User {
+    +UUID id
+    +string name
+    +string email
+    +string password_hash
+    +UserRole role
+    +login()
+    +change_password()
+  }
+  class Exam {
+    +UUID id
+    +string title
+    +string exam_code
+    +int timer_minutes
+    +bool require_seb
+    +bool is_practice
+    +generate_exam_code()
+    +availability_state()
+  }
+  class Question {
+    +UUID id
+    +QuestionType type
+    +string text
+    +json options
+    +string correct_option
+    +int marks
+    +string bloom_level
+  }
+  class ExamAttempt {
+    +UUID id
+    +AttemptStatus status
+    +float total_score
+    +datetime started_at
+    +datetime submitted_at
+  }
+  class Answer {
+    +UUID id
+    +string selected_option
+    +string text_answer
+    +float marks_awarded
+    +bool teacher_reviewed
+  }
+  class ProctoringEvent {
+    +UUID id
+    +string type
+    +float timestamp
+    +json event_metadata
+    +severity()
+  }
+  class EvidenceCapture {
+    +UUID id
+    +string event_type
+    +string s3_key
+    +float timestamp
+  }
+  class FaceEnrollment {
+    +UUID id
+    +float embeddings
+    +string model_version
+  }
+  class MLReview {
+    +UUID id
+    +string kind
+    +json result
+  }
+  class Group {
+    +UUID id
+    +string name
+    +string term
+  }
+  class Subject {
+    +UUID id
+    +string name
+  }
+  User "1" --> "0..*" Exam : creates
+  User "1" --> "0..*" ExamAttempt : takes
+  User "1" --> "0..1" FaceEnrollment : enrols
+  Subject "1" --> "0..*" Exam : categorises
+  Group "0..1" --> "0..*" Exam : assigned
+  Exam "1" --> "1..*" Question : contains
+  Exam "1" --> "0..*" ExamAttempt : has
+  ExamAttempt "1" --> "0..*" Answer : records
+  ExamAttempt "1" --> "0..*" ProctoringEvent : emits
+  ExamAttempt "1" --> "0..*" EvidenceCapture : captures
+  ExamAttempt "1" --> "0..*" MLReview : reviewed
+  Question "1" --> "0..*" Answer : answered
+</pre>
+    </div>
+    <figcaption><b>Figure 4.2</b> — Domain model. <code>ExamAttempt</code> is the aggregate root of a sitting: it owns the answers, the proctoring event stream, evidence snapshots and ML reviews.</figcaption>
+  </figure>
+  <details><summary>PlantUML source (for StarUML)</summary><pre>@startuml
+class User { id; name; email; password_hash; role; login(); change_password() }
+class Exam { id; title; exam_code; timer_minutes; require_seb; is_practice; generate_exam_code() }
+class Question { id; type; text; options; correct_option; marks; bloom_level }
+class ExamAttempt { id; status; total_score; started_at; submitted_at }
+class Answer { id; selected_option; text_answer; marks_awarded; teacher_reviewed }
+class ProctoringEvent { id; type; timestamp; event_metadata; severity() }
+class EvidenceCapture { id; event_type; s3_key; timestamp }
+class FaceEnrollment { id; embeddings; model_version }
+class MLReview { id; kind; result }
+class Group { id; name; term }
+class Subject { id; name }
+User "1" --> "0..*" Exam : creates
+User "1" --> "0..*" ExamAttempt : takes
+User "1" --> "0..1" FaceEnrollment : enrols
+Subject "1" --> "0..*" Exam
+Group "0..1" --> "0..*" Exam
+Exam "1" --> "1..*" Question
+Exam "1" --> "0..*" ExamAttempt
+ExamAttempt "1" --> "0..*" Answer
+ExamAttempt "1" --> "0..*" ProctoringEvent
+ExamAttempt "1" --> "0..*" EvidenceCapture
+ExamAttempt "1" --> "0..*" MLReview
+Question "1" --> "0..*" Answer
+@enduml</pre></details>
+
+  <h3 id="object">Object Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+classDiagram
+  class t["dr_sharma : User"] {
+    role = TEACHER
+  }
+  class subj["OOP : Subject"] {
+    name = Object-Oriented Programming
+  }
+  class grp["BScIT-6 : Group"] {
+    term = Spring 2026
+  }
+  class ex["midterm : Exam"] {
+    exam_code = 7KQ2P9
+    require_seb = true
+  }
+  class q1["q1 : Question"] {
+    type = MCQ
+    marks = 1
+  }
+  class q2["q2 : Question"] {
+    type = SHORT
+    marks = 5
+  }
+  class ros["entry#3 : ExamRosterEntry"] {
+    email = 022...@sxc.edu.np
+  }
+  class s["candidate : User"] {
+    role = STUDENT
+  }
+  class fe["enrol#5 : FaceEnrollment"] {
+    model_version = human-faceres-v1
+  }
+  class at["sitting#42 : ExamAttempt"] {
+    status = IN_PROGRESS
+  }
+  class a1["ans#1 : Answer"] {
+    selected_option = B
+  }
+  class ev["ev#918 : ProctoringEvent"] {
+    type = phone_detected
+  }
+  class sn["snap#7 : EvidenceCapture"] {
+    event_type = phone_detected
+  }
+  class mr["mlr#2 : MLReview"] {
+    kind = face
+  }
+  t --> subj : owns
+  t --> grp : owns
+  t --> ex : creates
+  subj --> ex : categorises
+  grp --> ex : assigned
+  ex --> q1 : contains
+  ex --> q2 : contains
+  ex --> ros : rosters
+  s --> fe : enrolled
+  s --> at : takes
+  ex --> at : has
+  at --> a1 : records
+  at --> ev : emits
+  at --> sn : captures
+  at --> mr : reviewed
+</pre>
+    </div>
+    <figcaption><b>Figure 4.3</b> — A live snapshot spanning both actors: teacher <em>dr_sharma</em> owns a subject and group and has created the SEB-required <em>midterm</em>; student <em>candidate</em> has enrolled a face and is mid-attempt, with an answer, a high-severity proctoring event, its evidence snapshot, and an advisory ML review.</figcaption>
+  </figure>
+
+  <h3 id="er">Entity–Relationship Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+erDiagram
+  USER ||--o{ EXAM : creates
+  USER ||--o{ EXAM_ATTEMPT : takes
+  USER ||--o| FACE_ENROLLMENT : enrols
+  SUBJECT ||--o{ EXAM : categorises
+  GROUP ||--o{ EXAM : assigned
+  EXAM ||--|{ QUESTION : contains
+  EXAM ||--o{ EXAM_ATTEMPT : has
+  EXAM ||--o{ EXAM_ROSTER_ENTRY : rosters
+  EXAM_ATTEMPT ||--o{ ANSWER : records
+  EXAM_ATTEMPT ||--o{ PROCTORING_EVENT : emits
+  EXAM_ATTEMPT ||--o{ EVIDENCE_CAPTURE : captures
+  EXAM_ATTEMPT ||--o{ ML_REVIEW : reviewed
+  QUESTION ||--o{ ANSWER : answered
+  USER {
+    uuid id PK
+    string email UK
+    string password_hash
+    enum role
+  }
+  EXAM {
+    uuid id PK
+    string exam_code UK
+    uuid creator_id FK
+    uuid subject_id FK
+    uuid group_id FK
+    bool require_seb
+    int timer_minutes
+  }
+  QUESTION {
+    uuid id PK
+    uuid exam_id FK
+    enum type
+    json options
+    string correct_option
+    int marks
+  }
+  EXAM_ATTEMPT {
+    uuid id PK
+    uuid exam_id FK
+    uuid student_id FK
+    enum status
+    float total_score
+  }
+  ANSWER {
+    uuid id PK
+    uuid attempt_id FK
+    uuid question_id FK
+    float marks_awarded
+    bool teacher_reviewed
+  }
+  PROCTORING_EVENT {
+    uuid id PK
+    uuid attempt_id FK
+    string type
+    float timestamp
+    json event_metadata
+  }
+  EVIDENCE_CAPTURE {
+    uuid id PK
+    uuid attempt_id FK
+    string event_type
+    string s3_key
+  }
+  FACE_ENROLLMENT {
+    uuid id PK
+    uuid user_id FK
+    string model_version
+  }
+  ML_REVIEW {
+    uuid id PK
+    uuid attempt_id FK
+    string kind
+    json result
+  }
+  EXAM_ROSTER_ENTRY {
+    uuid id PK
+    uuid exam_id FK
+    string email
+  }
+  SUBJECT { uuid id PK  string name }
+  GROUP { uuid id PK  string name  string term }
+</pre>
+    </div>
+    <figcaption><b>Figure 4.4</b> — Relational schema with primary and foreign keys. Every proctoring artefact (events, evidence, ML reviews) hangs off <code>EXAM_ATTEMPT</code> via <code>attempt_id</code>; a partial (0..1) relationship links a user to at most one face enrolment.</figcaption>
+  </figure>
+
+  <h3 id="seq">Sequence Diagrams</h3>
+  <p>Four interaction scenarios span both roles: the student sitting an exam, the teacher authoring one, the teacher invigilating live, and the shared authentication / token-refresh path that underpins every request.</p>
+
+  <h4>Student — join and sit a proctored exam</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor S as Student Browser
+  participant API as FastAPI
+  participant R as Redis
+  participant DB as PostgreSQL
+  participant WS as WS Manager
+  participant I as Instructor Browser
+  S->>API: POST /exams/join (PIN, email, UA)
+  API->>R: rate-limit + SEB check
+  API->>DB: validate PIN / roster, create attempt
+  API-->>S: attempt_id, require_seb
+  S->>API: GET /attempts/{id}/exam + questions
+  S->>S: start camera, load MediaPipe (WASM/WebGL)
+  S->>API: POST face-verification (1024-d embedding)
+  loop per frame / interval
+    S->>S: detect face, gaze, phone, book, audio
+  end
+  S->>API: POST proctoring-events (batched 5s)
+  API->>DB: persist events
+  API->>WS: broadcast(exam channel)
+  WS-->>I: live event
+  Note over S,API: flagged event triggers one snapshot
+  S->>API: POST /attempts/{id}/evidence (JPEG)
+  S->>API: POST /attempts/{id}/submit
+  API->>DB: status = SUBMITTED
+  API->>WS: broadcast(status)
+  API->>API: enqueue grade_attempt_task (Celery)
+</pre>
+    </div>
+    <figcaption><b>Figure 4.5</b> — <b>Student.</b> Join → proctored sitting → submit. All computer-vision inference happens on the student's device; the server persists events, fans them out to the invigilator, and enqueues grading.</figcaption>
+  </figure>
+
+  <h4>Teacher — exam authoring and AI question generation</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor T as Teacher Browser
+  participant PX as Next.js Proxy
+  participant API as FastAPI
+  participant S3 as MinIO
+  participant Q as Celery Queue
+  participant W as Question Worker
+  participant G as Gemini API
+  participant DB as PostgreSQL
+  T->>API: GET /files/presigned-upload
+  API-->>T: presigned POST (10 MB policy)
+  T->>S3: POST course PDF (direct)
+  T->>PX: POST /exams (title, params, require_seb)
+  PX->>API: forward + Authorization
+  API->>DB: insert Exam (unique PIN)
+  API-->>T: exam_id, PIN
+  T->>PX: POST /questions/generate (file_id)
+  PX->>API: forward
+  API->>Q: enqueue generate task
+  API-->>T: job_id
+  W->>S3: fetch PDF
+  W->>G: prompt: generate MCQ + short-answer
+  G-->>W: structured questions
+  W->>DB: insert Questions
+  loop poll every 4s
+    T->>API: GET generation-status
+    API-->>T: pending / completed
+  end
+</pre>
+    </div>
+    <figcaption><b>Figure 4.6</b> — <b>Teacher.</b> The PDF uploads straight to object storage under a size-capped presigned policy; question generation runs asynchronously on a Celery worker calling Gemini, and the browser polls for completion.</figcaption>
+  </figure>
+
+  <h4>Teacher — live invigilation and grade review</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor I as Instructor Browser
+  participant PX as Next.js Proxy
+  participant API as FastAPI
+  participant R as Redis
+  participant WS as WS Manager
+  participant DB as PostgreSQL
+  I->>PX: POST /ws/ticket (exam_id)
+  PX->>API: forward + Authorization
+  API->>API: verify teacher owns exam
+  API->>R: SET ws_ticket (60s, single-use)
+  API-->>I: ticket
+  I->>WS: connect /ws/exams/{id}?ticket
+  WS->>R: GETDEL ticket (validate)
+  WS-->>I: subscribed
+  Note over WS,I: live student events arrive
+  WS-->>I: proctoring_event / attempt_status
+  I->>PX: GET /attempts/{id}/evidence
+  PX->>API: forward
+  API->>DB: fetch captures
+  API-->>I: presigned image URLs
+  I->>PX: PATCH review (override a mark)
+  PX->>API: forward
+  API->>DB: update Answer, recompute total
+  API-->>I: updated score
+</pre>
+    </div>
+    <figcaption><b>Figure 4.7</b> — <b>Teacher.</b> A single-use ticket authorises the WebSocket (which cannot carry an auth header); events stream live to the roster, and the teacher inspects evidence and overrides grades over the authenticated proxy.</figcaption>
+  </figure>
+
+  <h4>Both roles — authentication and transparent token refresh</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+  actor U as User Browser
+  participant PX as /api/backend Proxy
+  participant NA as NextAuth Cookie
+  participant API as FastAPI
+  participant R as Redis
+  U->>API: POST /auth/login (email, password)
+  API->>R: rate-limit check
+  API-->>U: access (60 min) + refresh (rotating)
+  Note over U,NA: tokens held in encrypted httpOnly cookie
+  U->>PX: API request (cookie only)
+  PX->>NA: decrypt session
+  alt access token valid
+    PX->>API: request + Bearer access
+  else access token expired
+    PX->>API: POST /auth/refresh (refresh token)
+    API->>R: check jti not revoked, then rotate
+    API-->>PX: new access + refresh
+    PX->>PX: re-encode session cookie
+    PX->>API: retry + new Bearer
+  end
+  API-->>PX: response
+  PX-->>U: response (token never seen by page JS)
+</pre>
+    </div>
+    <figcaption><b>Figure 4.8</b> — <b>Both actors.</b> Every authenticated request flows through the server-side proxy, which decrypts the cookie, refreshes an expired access token by rotating the refresh token, and forwards with a bearer header — so no backend token is ever exposed to client JavaScript.</figcaption>
+  </figure>
+
+  <h3 id="state">State Diagrams</h3>
+  <p>The system contains four independent state machines worth modelling: the attempt lifecycle a student drives, the asynchronous question-generation job, the per-answer review path (including the teacher override), and the live WebSocket connection.</p>
+
+  <h4>Exam attempt lifecycle</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> NotStarted
+  NotStarted --> InProgress : join (PIN valid, SEB satisfied)
+  state InProgress {
+    [*] --> Monitoring
+    Monitoring --> Warned : violation (strikes &lt; 3)
+    Warned --> Monitoring : student resumes
+    Monitoring --> Terminated : strikes == 3
+    Warned --> Terminated : strikes == 3
+  }
+  InProgress --> Submitted : submit
+  Terminated --> Submitted : forced close
+  Submitted --> Graded : Celery grading complete
+  Graded --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.9</b> — Lifecycle of an <code>ExamAttempt</code>. The nested region shows the three-strike proctoring sub-machine that governs the <code>InProgress</code> state.</figcaption>
+  </figure>
+
+  <h4>Question-generation job (Celery)</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Pending : task enqueued
+  Pending --> Processing : worker picks up
+  Processing --> Completed : questions saved
+  Processing --> Failed : Gemini / parse error
+  Failed --> Retrying : attempts &lt; 3
+  Retrying --> Processing : exponential backoff
+  Failed --> [*] : retries exhausted
+  Completed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.10</b> — The asynchronous AI question-generation (and grading) task. Failures retry up to three times with exponential backoff before surfacing to the teacher for a manual retry.</figcaption>
+  </figure>
+
+  <h4>Answer review (human-in-the-loop)</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Unanswered
+  Unanswered --> Saved : autosave (600ms debounce)
+  Saved --> Saved : edit again
+  Saved --> Submitted : attempt submitted
+  Unanswered --> Submitted : left blank
+  Submitted --> AIGraded : MCQ match / LLM score
+  AIGraded --> TeacherReviewed : teacher overrides
+  AIGraded --> [*] : accepted as-is
+  TeacherReviewed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.11</b> — An individual answer's states, from debounced autosave through automatic grading to the optional teacher override that marks it <code>teacher_reviewed</code> and recomputes the total.</figcaption>
+  </figure>
+
+  <h4>Live WebSocket connection</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> MintingTicket
+  MintingTicket --> Connecting : ticket issued
+  MintingTicket --> Backoff : mint failed
+  Connecting --> Open : handshake + ticket valid
+  Connecting --> Backoff : rejected (4401) / error
+  Open --> Open : ping / pong every 25s
+  Open --> Backoff : connection dropped
+  Backoff --> MintingTicket : retry (exp backoff, max 30s)
+  Open --> Closed : page unmount
+  Closed --> [*]
+</pre>
+    </div>
+    <figcaption><b>Figure 4.12</b> — The invigilator's live channel. Each connection begins by minting a single-use ticket; drops trigger a fresh ticket and exponential-backoff reconnect, and a heartbeat keeps half-dead sockets from lingering.</figcaption>
+  </figure>
+
+  <h3 id="activity">Activity Diagrams</h3>
+  <p>The two actors follow distinct workflows: the student's proctored sitting and the teacher's authoring-to-review cycle.</p>
+
+  <h4>Student activity</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart TD
+  A([Open exam link]) --> B{require_seb?}
+  B -->|yes| C{In Safe Exam Browser?}
+  C -->|no| X[Block: SEB required]
+  C -->|yes| D{Face enrolled?}
+  B -->|no| D
+  D -->|no| E[Guided 5-pose enrolment]
+  E --> F[Grant camera + enter fullscreen]
+  D -->|yes| F
+  F --> G[Run monitors: face, gaze, audio, object, environment]
+  G --> H{Violation detected?}
+  H -->|yes| I[Report event; snapshot if flagged]
+  I --> J{strikes == 3?}
+  J -->|yes| K[Terminate → /test/blocked]
+  J -->|no| L[Warn; student resumes]
+  L --> G
+  H -->|no| M{Submit pressed?}
+  M -->|no| G
+  M -->|yes| N[Submit answers]
+  N --> O[Celery: grade MCQ + AI short-answer]
+  O --> P([Result + teacher review])
+  K --> P
+</pre>
+    </div>
+    <figcaption><b>Figure 4.13</b> — <b>Student.</b> End-to-end candidate activity, including the SEB gate, one-time enrolment, the continuous monitor loop with the three-strike branch, and grading.</figcaption>
+  </figure>
+
+  <h4>Teacher activity</h4>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart TD
+  A([Teacher: New Exam]) --> B[Create or pick subject and group]
+  B --> C[Upload course PDF]
+  C --> D{PDF valid and under 10 MB?}
+  D -->|no| C
+  D -->|yes| E[Set title, duration, question count]
+  E --> F{Schedule window?}
+  F -->|yes| G[Set dates and daily times]
+  F -->|no| H
+  G --> H{Require SEB?}
+  H -->|yes| I[Enable SEB gate]
+  H -->|no| J
+  I --> J[Create exam and receive PIN]
+  J --> K[AI generates questions - async]
+  K --> L{Generation done?}
+  L -->|failed| M[Retry generation]
+  M --> L
+  L -->|completed| N[Review and edit questions]
+  N --> O[Share PIN with students]
+  O --> P[Monitor live dashboard]
+  P --> Q([Review and override grades])
+</pre>
+    </div>
+    <figcaption><b>Figure 4.14</b> — <b>Teacher.</b> The authoring-to-invigilation cycle: prepare material, generate and review questions, configure the gate and schedule, publish, then monitor live and review grades.</figcaption>
+  </figure>
+
+  <h3 id="component">Component Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart LR
+  subgraph Client[Browser Client]
+    UI[Next.js App-Router UI]
+    HK[Proctoring hooks]
+    MP[MediaPipe / Human WASM]
+    UI --> HK --> MP
+  end
+  subgraph Edge[Next.js Server]
+    PX[/api/backend proxy/]
+    AU[NextAuth v5]
+  end
+  subgraph Backend[FastAPI]
+    RT[Routers: auth, exams, attempts, files, ws]
+    SV[Services: grading, seb, upload, availability]
+    WK[Celery: face, anomaly, fairness, grading]
+  end
+  subgraph Infra[Infrastructure]
+    PG[(PostgreSQL)]
+    RD[(Redis)]
+    S3[(MinIO / S3)]
+    GM[Gemini API]
+  end
+  UI --> PX
+  HK --> RT
+  PX --> RT
+  AU --> PX
+  RT --> SV
+  RT --> RD
+  SV --> PG
+  SV --> S3
+  WK --> GM
+  WK --> PG
+</pre>
+    </div>
+    <figcaption><b>Figure 4.15</b> — Components and their interfaces. Authenticated traffic passes through the Next.js proxy (which injects the token server-side); capability-based exam traffic reaches the routers directly.</figcaption>
+  </figure>
+
+  <h3 id="deploy">Deployment Diagram</h3>
+  <figure>
+    <div class="scroll">
+<pre class="mermaid">
+flowchart TB
+  subgraph Dev[Candidate / Teacher Device]
+    BR[Browser + Webcam + Microphone]
+  end
+  subgraph App[Application Server]
+    N[Node.js — Next.js 16]
+    U[uvicorn — FastAPI]
+    C[Celery workers + beat]
+  end
+  subgraph Data[Data Services]
+    PG[(PostgreSQL)]
+    RD[(Redis)]
+    MO[(MinIO Object Store)]
+  end
+  EX[Google Gemini API]
+  BR -->|HTTPS / WSS| N
+  BR -->|HTTPS / WSS| U
+  N -->|HTTP| U
+  U -->|TCP| PG
+  U -->|TCP| RD
+  U -->|S3 API| MO
+  C -->|TCP| RD
+  C -->|TCP| PG
+  C -->|HTTPS| EX
+</pre>
+    </div>
+    <figcaption><b>Figure 4.16</b> — Physical deployment. Vision/audio inference executes on the candidate device; the application server hosts the web, API and worker processes; data services and the LLM are reached over TCP/HTTPS.</figcaption>
+  </figure>
+
+  <!-- ================= ALGORITHMS ================= -->
+  <h3 id="algo">Algorithm Details</h3>
+  <p>The system's distinctive behaviour lives in a handful of algorithms spanning client-side vision, telemetry control, and server-side security. The most significant are given below in pseudocode.</p>
+
+  <p class="algo-title">Algorithm 1 — Gaze estimation from iris landmarks</p>
+  <pre class="algo">INPUT : 478 face landmarks L from MediaPipe FaceLandmarker
+OUTPUT: gaze direction, away flag, yaw, pitch
+
+for each eye e in {right, left}:
+    width_e  = |L[inner_e].x - L[outer_e].x|
+    if width_e &lt; epsilon: return CENTER          # eye too small / bad frame
+    hRatio_e = (L[iris_e].x - L[outer_e].x) / (L[inner_e].x - L[outer_e].x)
+hRatio = mean(hRatio_right, hRatio_left)          # 0 = temple, 1 = nose
+vRatio = (L[iris_R].y - L[top_R].y) / |L[bottom_R].y - L[top_R].y|
+
+direction = CENTER
+if   hRatio &lt; 0.28: direction = RIGHT
+elif hRatio &gt; 0.72: direction = LEFT
+elif vRatio &lt; 0.25: direction = UP
+elif vRatio &gt; 0.80: direction = DOWN
+away = (direction != CENTER)
+# "gaze_away" fires only if away persists &gt; 4 s (see Algorithm 2)</pre>
+
+  <p class="algo-title">Algorithm 2 — Per-type throttling and batched delivery</p>
+  <pre class="algo">STATE: lastFired[type] = 0 ;  buffer = [] ;  flush every 5 s
+
+function canFire(type, minGapMs):        # dampens high-frequency signals
+    now = currentTimeMillis()
+    if now - lastFired[type] &lt; minGapMs: return false
+    lastFired[type] = now ;  return true
+
+function onEvent(ev):                     # from every monitor
+    buffer.push(ev)                        # coalesced into one request
+    if ev.type in EVIDENCE_WORTHY and now - lastCapture &gt;= 8000:
+        captureWebcamFrame() -&gt; upload    # flagged-moment snapshot only
+
+every 5 s: if buffer not empty: POST buffer ; buffer = []
+on pagehide: navigator.sendBeacon(buffer) # never lose the tail</pre>
+
+  <p class="algo-title">Algorithm 3 — Fixed-window rate limiting (Redis, fail-open)</p>
+  <pre class="algo">INPUT : bucket name b, client IP, limit N, window W seconds
+key = "ratelimit:" + b + ":" + clientIP
+try:
+    count = REDIS.INCR(key)
+    if count == 1: REDIS.EXPIRE(key, W)
+    if count &gt; N:
+        ttl = REDIS.TTL(key)
+        raise HTTP 429 with Retry-After = ttl
+except RedisError:
+    log() ; ALLOW request      # availability &gt; strict limiting</pre>
+
+  <p class="algo-title">Algorithm 4 — Refresh-token rotation with reuse detection</p>
+  <pre class="algo">INPUT : presented refresh token T (claims: sub, jti, exp, type=refresh)
+verify signature and type ; else 401
+if REDIS.exists("revoked_jti:"+T.jti): 401           # already revoked
+status = markRefreshUsed(T.jti, T.exp):
+    if SETNX("refresh_used:"+T.jti): return "ok"      # first use
+    else: return (now - usedAt &lt;= 30 s) ? "ok" : "reused"
+if status == "reused": 401 "reuse detected"           # stolen-token replay
+issue new access + new refresh (fresh jti)             # rotation</pre>
+
+  <p class="algo-title">Algorithm 5 — Advisory face verification</p>
+  <pre class="algo">INPUT : session embedding s (1024-d), enrolment set E for the student
+best = min over e in E of  euclidean(s, e)             # L2 distance
+review = { kind: "face", distance: best, flag: "needs_review" }
+persist(review)          # advisory only — never blocks or auto-fails
+# no raw frame is transmitted; only the numeric embedding leaves the browser</pre>
+
+  <p class="algo-title">Algorithm 6 — Single-use WebSocket ticket handshake</p>
+  <pre class="algo">MINT (authenticated REST, teacher):
+    verify teacher owns the attempt/exam channel
+    ticket = randomUrlsafe(32)
+    REDIS.SET("ws_ticket:"+ticket, {channel, userId}, EX=60)   # 60 s TTL
+    return ticket
+
+CONNECT (WebSocket, ?ticket=...):
+    data = REDIS.GETDEL("ws_ticket:"+ticket)     # atomic: single use
+    if data == null or data.channel != requestedChannel:
+        accept then close(4401)                  # unauthorised
+    else: subscribe(channel) ; answer "ping" with "pong"</pre>
+
+  <!-- ================= CHAPTER 5 ================= -->
+  <h2 id="c5">Chapter 5 · Implementation and Testing</h2>
+
+  <h3>5.1 Implementation</h3>
+
+  <h4 id="tools">5.1.1 Tools Used</h4>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Layer</th><th>Tools &amp; libraries</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td>Next.js 16.2, React 19.2, TypeScript 5, Tailwind CSS 4</td><td>App-Router UI, routing, styling, type safety</td></tr>
+      <tr><td>Frontend state/forms</td><td>NextAuth v5, Zustand, TanStack Query, React Hook Form, Zod, axios</td><td>Auth session, client state, data fetching, validated forms</td></tr>
+      <tr><td>Client vision/audio</td><td>MediaPipe Tasks Vision (FaceLandmarker, ObjectDetector), <code>@vladmandic/human</code>, Web Audio API, d3</td><td>In-browser face/gaze/object detection, face embeddings, audio analysis, gaze plot</td></tr>
+      <tr><td>Backend</td><td>Python 3.12, FastAPI, Uvicorn, SQLAlchemy 2, Alembic, Pydantic 2</td><td>REST + WebSocket API, ORM, migrations, schemas</td></tr>
+      <tr><td>Backend security</td><td>PyJWT, bcrypt, custom Redis rate limiter / token store / WS tickets</td><td>JWT rotation &amp; revocation, hashing, rate limiting, WS auth</td></tr>
+      <tr><td>Async &amp; AI</td><td>Celery, Redis, google-genai (Gemini), pymupdf</td><td>Background grading &amp; generation, broker, LLM calls, PDF parsing</td></tr>
+      <tr><td>Storage</td><td>PostgreSQL, MinIO / boto3 (S3)</td><td>Relational data, object storage for PDFs and evidence</td></tr>
+      <tr><td>Testing &amp; quality</td><td>pytest, pytest-asyncio, Vitest, jsdom, ESLint, tsc</td><td>Unit tests, type checking, linting</td></tr>
+      <tr><td>Ops &amp; tooling</td><td>Docker Compose, Flower, Git, VS Code, StarUML</td><td>Containerisation, task monitoring, version control, modelling</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4 id="modules">5.1.2 Implementation Details of Modules</h4>
+
+  <p><strong>Authentication module.</strong> Credentials are verified by FastAPI against bcrypt hashes; the server issues an access token (60 min, carrying a <code>jti</code>) and a rotating refresh token (30 days). NextAuth v5 holds both inside an encrypted, httpOnly session cookie. A Next.js catch-all proxy route (<code>/api/backend/[...path]</code>) decrypts the cookie server-side, injects the <code>Authorization</code> header, and refreshes expired tokens transparently, so no backend token is ever readable by page JavaScript. Refresh tokens are single-use with a 30-second grace window; replay outside it is treated as theft and rejected, and logout revokes both tokens via a Redis <code>jti</code> denylist.</p>
+
+  <p><strong>Exam authoring module.</strong> A teacher uploads a PDF straight to MinIO via a size-capped presigned POST; the backend parses it (<code>pymupdf</code>) and a Celery task calls Gemini to generate MCQ and short-answer questions with Bloom tags. Exams carry a unique 6-character PIN, an optional recurring availability window (institution timezone), subject/group linkage, and the <code>require_seb</code> flag.</p>
+
+  <p><strong>Proctoring module.</strong> React hooks drive the monitors on the exam page. <code>useProctoringMonitor</code> runs MediaPipe FaceLandmarker each animation frame for face-count, absence and gaze; <code>useObjectDetection</code> runs EfficientDet-Lite0 sparsely (2.5 s) for phones and books; <code>useAudioMonitor</code> analyses the microphone for voice and multiple speakers; <code>useEnvironmentCheck</code> flags VMs, extra monitors, screen capture and SEB; and <code>useExamSecurity</code> enforces fullscreen, blocks copy/paste, DevTools shortcuts, back-navigation and right-click, and applies the three-strike termination. All signals are throttled per type and batched every five seconds, with a <code>sendBeacon</code> flush on page-hide.</p>
+
+  <p><strong>Evidence module.</strong> When an event on the evidence allowlist fires, one webcam frame is drawn to a canvas, encoded as JPEG and posted to a capability-based endpoint that validates it by magic bytes and size and enforces per-attempt quotas before storing it in MinIO. Teachers view snapshots through short-lived presigned URLs in an evidence gallery.</p>
+
+  <p><strong>Live invigilation module.</strong> A teacher's browser mints a single-use WebSocket ticket over the authenticated proxy, then connects to an exam-level channel. The backend broadcasts every proctoring event and attempt-status change to that channel; the roster updates live (event counts, risk indicator, new joiners, submissions) with heartbeat and backoff reconnection.</p>
+
+  <p><strong>Grading module.</strong> On submission, a Celery task grades MCQs by exact option match and short answers via a structured Gemini prompt returning score, correctness and feedback. A teacher can override any mark; overrides are recorded (<code>graded_by = TEACHER</code>) and the total recomputed. Advisory face, anomaly and fairness workers attach ML-review records without gating the result.</p>
+
+  <h3>5.2 Testing</h3>
+
+  <h4 id="unit">5.2.1 Test Cases for Unit Testing</h4>
+  <p>Automated unit tests cover the security-critical and logic-critical pure functions on both tiers — <strong>43 backend (pytest)</strong> and <strong>11 frontend (Vitest)</strong>, all passing. A representative selection:</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Unit under test</th><th>Input / condition</th><th>Expected</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="id">UT-01</td><td>Access-token creation</td><td>Create token for a teacher</td><td>Carries <code>jti</code>, role, expiry</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-02</td><td>Refresh rotation</td><td>Reuse a refresh token after grace window</td><td>Returns "reused" → 401</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-03</td><td>Token revocation</td><td>Revoke a <code>jti</code>, then check</td><td>Detected as revoked</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-04</td><td>Tampered token</td><td>Flip last bytes of a valid JWT</td><td>Rejected (signature error)</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-05</td><td>Rate limiter</td><td>Exceed limit within window</td><td>429 with Retry-After</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-06</td><td>Rate limiter (Redis down)</td><td>Redis raises on INCR</td><td>Fails open (request allowed)</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-07</td><td>WS ticket</td><td>Consume same ticket twice</td><td>First ok, second rejected</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-08</td><td>WS ticket channel</td><td>Consume against wrong channel</td><td>Rejected</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-09</td><td>PDF validation</td><td>ZIP bytes with .pdf name + type</td><td>Rejected (magic-byte check)</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-10</td><td>PDF validation</td><td>File &gt; 10 MB</td><td>Rejected (size cap)</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-11</td><td>Evidence gate</td><td><code>gaze_sample</code> event</td><td>Never captured (privacy)</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-12</td><td>Severity mapping</td><td><code>phone_detected</code></td><td>Maps to "high"</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-13</td><td>SEB detection</td><td>UA "SEB/3.5" / header hash</td><td>Detected as SEB</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-14</td><td>SEB detection</td><td>Plain Chrome UA</td><td>Not SEB</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-15</td><td>VM renderer classifier</td><td>"llvmpipe" / "VMware SVGA"</td><td>Flagged as VM</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">UT-16</td><td>Event throttle</td><td>Two fires within min-gap</td><td>Second suppressed</td><td class="pass">Pass</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4 id="system">5.2.2 Test Cases for System Testing</h4>
+  <p>End-to-end scenarios exercise the integrated system across browser, API, workers and data stores.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>ID</th><th>Scenario</th><th>Steps</th><th>Expected result</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="id">ST-01</td><td>Teacher login</td><td>Sign in with valid credentials</td><td>Session set; dashboard loads; token never in page JS</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-02</td><td>Create exam + AI generation</td><td>Upload PDF, set params, create</td><td>Exam created with PIN; questions generated asynchronously</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-03</td><td>Oversized upload</td><td>Upload a 12 MB PDF</td><td>Rejected with size error; storage policy blocks it</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-04</td><td>Join by PIN</td><td>Student enters valid PIN + email</td><td>Attempt created; exam loads</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-05</td><td>Join blocked (roster)</td><td>Email not on roster</td><td>403 with clear reason; no attempt created</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-06</td><td>SEB gate</td><td>Join an SEB-required exam in Chrome</td><td>403 "must use Safe Exam Browser"; page also blocks</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-07</td><td>Face enrolment</td><td>Complete five poses</td><td>Embeddings stored; no raw image transmitted</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-08</td><td>Proctoring termination</td><td>Switch tab / exit fullscreen three times</td><td>Warnings then termination → /test/blocked</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-09</td><td>Evidence capture</td><td>Phone held in view</td><td><code>phone_detected</code> logged; one snapshot in gallery</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-10</td><td>Live dashboard</td><td>Teacher opens exam while student sits it</td><td>Roster updates live; reconnects after drop</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-11</td><td>Grading + override</td><td>Submit; teacher edits a mark</td><td>MCQ auto-graded, short-answer AI-graded; override recomputes total</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-12</td><td>Token refresh</td><td>Let access token expire mid-session</td><td>Proxy refreshes transparently; no re-login</td><td class="pass">Pass</td></tr>
+      <tr><td class="id">ST-13</td><td>Brute-force login</td><td>Rapid repeated bad logins from one IP</td><td>429 after the limit</td><td class="pass">Pass</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="result">5.3 Result Analysis</h3>
+  <p>All <strong>54 unit tests (43 backend + 11 frontend)</strong> pass, and the frontend additionally passes strict type-checking (<code>tsc</code>), linting (ESLint) and a production build (<code>next build</code>). The thirteen system scenarios behave as specified. The test suite deliberately concentrates on the security-critical and correctness-critical logic — token rotation and revocation, rate limiting, WebSocket ticketing, upload validation, the evidence privacy gate, SEB detection and the VM/throttle heuristics — because these are the parts whose silent failure would most undermine examination integrity.</p>
+  <p>Functionally, the system meets every requirement in §3.1.1: exams are authored with AI assistance, candidates are proctored across nine independent signal families, invigilators watch in real time, and responses are graded with a human-in-the-loop. Against the non-functional targets, the throttling-and-batching design keeps network traffic low (one telemetry request per five seconds regardless of signal volume) and the debounced autosave prevents request floods; the fail-open security primitives preserve availability during a cache outage; and the privacy posture holds — only embeddings and flagged-moment snapshots ever leave the browser.</p>
+  <p>Two limitations are recorded honestly. First, computer-vision inference runs on the browser's main thread, so very low-end hardware can experience UI jank — moving inference to a Web Worker is the remedy. Second, the WebSocket manager is single-worker; horizontal scaling of live invigilation requires the documented Redis pub/sub upgrade. Neither affects correctness at single-instance scale, and both have clear, low-risk resolutions.</p>
+
+  <!-- ================= CHAPTER 6 ================= -->
+  <h2 id="c6">Chapter 6 · Conclusion and Future Work</h2>
+
+  <h3>6.1 Conclusion</h3>
+  <p>This project set out to build a fast, secure and well-featured computer-based assessment platform, and delivered one that is credible on all three counts. Examinations are authored with AI assistance from ordinary course PDFs, candidates are proctored entirely in the browser across face, gaze, audio, object, environment and behavioural signals, invigilators observe in real time, and answers are graded semantically with a teacher able to review every mark. Crucially, the platform reaches this capability without the two costs that define commercial proctoring: it needs no per-candidate licence and no full-screen surveillance. Inference runs on the candidate's own device, only numeric embeddings and flagged-moment snapshots are transmitted, and the security architecture keeps authentication tokens out of reach of page scripts while rate-limiting and revoking them server-side. The result is a system whose integrity guarantees are proportionate and defensible rather than merely maximal — the correct trade-off for an institutional deployment.</p>
+
+  <h3>6.2 Future Recommendations</h3>
+  <ul>
+    <li><strong>Cryptographic SEB enforcement.</strong> Upgrade the current presence check to full Browser-Exam-Key / Config-Key hash validation, distributing exams with a matching <code>.seb</code> configuration so SEB cannot be spoofed by user-agent alone.</li>
+    <li><strong>Off-main-thread inference.</strong> Move the MediaPipe and Human pipelines into a Web Worker (OffscreenCanvas) to eliminate UI jank on low-end devices.</li>
+    <li><strong>Continuous identity verification.</strong> Re-verify the candidate's face periodically rather than once, and enable liveness/anti-spoof detection to defeat photo attacks.</li>
+    <li><strong>Horizontally scalable invigilation.</strong> Replace the in-process WebSocket manager with Redis pub/sub so live monitoring survives multiple API workers.</li>
+    <li><strong>Trained anomaly &amp; fairness models.</strong> Replace the placeholder z-score anomaly worker with the intended sequence model once enough graded attempts exist, and add a protected-attribute field to enable genuine subgroup fairness auditing.</li>
+    <li><strong>Composite risk scoring.</strong> Fuse the per-type violation counts into a single, explainable per-attempt trust score to help teachers triage review.</li>
+    <li><strong>Load &amp; soak testing.</strong> Add end-to-end and load tests (Playwright + a WebSocket load harness) to complement the current unit suite before large-cohort use.</li>
+    <li><strong>Accessibility &amp; mobile.</strong> Broaden support for assistive technology and evaluate a constrained mobile-tablet exam mode.</li>
+  </ul>
+
+  <hr>
+  <p class="meta">Diagrams above render from Mermaid; PlantUML source is provided under the class diagram and in <code>diagrams.puml</code>. A StarUML class model is provided as <code>cba-class-model.mdj</code> — open it in StarUML, then drag the classes from Model Explorer onto a new Class Diagram (associations draw automatically).</p>
+
+</div>

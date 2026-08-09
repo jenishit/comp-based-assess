@@ -3,9 +3,10 @@ import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
 
 declare module "next-auth" {
+  // SECURITY: no accessToken/refreshToken on Session — the session object is
+  // client-readable. Backend tokens live only in the JWT (httpOnly cookie)
+  // and are attached server-side by app/api/backend/[...path]/route.ts.
   interface Session extends DefaultSession {
-    accessToken?: string;
-    refreshToken?: string
     session_id?: string;
     user_id?: string;
     role_id?: string;
@@ -35,6 +36,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     accessToken?: string;
     refreshToken?: string
+    accessTokenExpires?: number;
     role_id?: string;
     instructor_profile_id?: string;
     role?: string;

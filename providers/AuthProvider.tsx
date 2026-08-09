@@ -1,31 +1,31 @@
 "use client"
-import { refreshAuthToken } from '@/axios/instance';
 import { getMe } from '@/services/auth-service';
-import { useUserStore } from '@/stores/userStore';
-import { useSession } from 'next-auth/react';
+import { useUserStore } from '@/stores/user-store';
+import { signOut, useSession } from 'next-auth/react';
 import React, { useEffect } from 'react'
 
 interface AuthProviderProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
-export default function AuthProvider({children}:AuthProviderProps) {
-  const {data: session, status} = useSession()
+export default function AuthProvider({ children }: AuthProviderProps) {
+  const { data: session, status } = useSession()
   const { setUser, setLoading, clear } = useUserStore();
 
   useEffect(() => {
+    // If token refresh failed irrecoverably, sign out
+    if (session?.error === 'RefreshAccessTokenError') {
+      console.error('[auth] signing out: session carries RefreshAccessTokenError');
+      signOut({ callbackUrl: '/login' });
+      return;
+    }
+
     // Wait for the session to resolve before deciding anything.
     if (status === "loading") return;
 
-    // The session just settled or changed — drop the axios token cache so the
-    // next request re-reads it (covers SPA sign-in/-out without a full reload).
-    refreshAuthToken();
-
-    // `status` can be "authenticated" while the session still carries no
-    // accessToken (a stale cookie, or a token that expired but the session
-    // hasn't been cleared yet). Without a token there's nothing to fetch.
-    const token = session?.accessToken;
-    if (status === "unauthenticated" || !token) {
+    // Backend tokens never reach the client anymore — the /api/backend proxy
+    // injects them server-side — so an authenticated status is all we need.
+    if (status === "unauthenticated") {
       clear();
       return;
     }
@@ -53,7 +53,7 @@ export default function AuthProvider({children}:AuthProviderProps) {
     return () => {
       cancelled = true;
     };
-  }, [status, session?.accessToken, setUser, setLoading, clear]);
+  }, [status, session, setUser, setLoading, clear]);
 
   return <>{children}</>;
 }

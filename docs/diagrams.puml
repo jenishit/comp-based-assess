@@ -1,0 +1,503 @@
+' ============================================================
+'  CBA System — PlantUML sources for all UML diagrams
+'  Render at https://www.plantuml.com/plantuml or the VS Code
+'  PlantUML extension. Each @startuml..@enduml is one diagram.
+' ============================================================
+
+' ---------- 1. CLASS DIAGRAM ----------
+@startuml Class
+class User {
+  +id : UUID
+  +name : String
+  +email : String
+  +password_hash : String
+  +role : UserRole
+  +login()
+  +change_password()
+}
+class Exam {
+  +id : UUID
+  +title : String
+  +exam_code : String
+  +timer_minutes : Integer
+  +require_seb : Boolean
+  +is_practice : Boolean
+  +generate_exam_code()
+  +availability_state()
+}
+class Question {
+  +id : UUID
+  +type : QuestionType
+  +text : String
+  +options : JSON
+  +correct_option : String
+  +marks : Integer
+  +bloom_level : String
+}
+class ExamAttempt {
+  +id : UUID
+  +status : AttemptStatus
+  +total_score : Float
+  +started_at : DateTime
+  +submitted_at : DateTime
+}
+class Answer {
+  +id : UUID
+  +selected_option : String
+  +text_answer : String
+  +marks_awarded : Float
+  +teacher_reviewed : Boolean
+}
+class ProctoringEvent {
+  +id : UUID
+  +type : String
+  +timestamp : Float
+  +event_metadata : JSON
+  +severity()
+}
+class EvidenceCapture {
+  +id : UUID
+  +event_type : String
+  +s3_key : String
+  +timestamp : Float
+}
+class FaceEnrollment {
+  +id : UUID
+  +embeddings : Float[][]
+  +model_version : String
+}
+class MLReview {
+  +id : UUID
+  +kind : String
+  +result : JSON
+}
+class Group { +id : UUID; +name : String; +term : String }
+class Subject { +id : UUID; +name : String }
+
+User "1" --> "0..*" Exam : creates
+User "1" --> "0..*" ExamAttempt : takes
+User "1" --> "0..1" FaceEnrollment : enrols
+Subject "1" --> "0..*" Exam : categorises
+Group "0..1" --> "0..*" Exam : assigned
+Exam "1" *-- "1..*" Question : contains
+Exam "1" --> "0..*" ExamAttempt : has
+ExamAttempt "1" *-- "0..*" Answer : records
+ExamAttempt "1" *-- "0..*" ProctoringEvent : emits
+ExamAttempt "1" *-- "0..*" EvidenceCapture : captures
+ExamAttempt "1" --> "0..*" MLReview : reviewed
+Question "1" --> "0..*" Answer : answered
+@enduml
+
+' ---------- 2. OBJECT DIAGRAM ----------
+@startuml Object
+object "candidate : User" as u {
+  role = STUDENT
+}
+object "midterm : Exam" as ex {
+  exam_code = 7KQ2P9
+  require_seb = true
+}
+object "sitting#42 : ExamAttempt" as at {
+  status = IN_PROGRESS
+}
+object "ev#918 : ProctoringEvent" as e1 {
+  type = phone_detected
+  severity = high
+}
+object "ev#919 : ProctoringEvent" as e2 {
+  type = gaze_away
+  severity = low
+}
+object "snap#7 : EvidenceCapture" as sn {
+  event_type = phone_detected
+}
+u --> at : takes
+ex --> at : has
+at --> e1
+at --> e2
+at --> sn
+@enduml
+
+' ---------- 3. SEQUENCE DIAGRAM ----------
+@startuml Sequence
+actor "Student Browser" as S
+participant "FastAPI" as API
+participant "Redis" as R
+database "PostgreSQL" as DB
+participant "WS Manager" as WS
+actor "Instructor" as I
+S -> API : POST /exams/join (PIN, email, UA)
+API -> R : rate-limit + SEB check
+API -> DB : validate PIN/roster, create attempt
+API --> S : attempt_id, require_seb
+S -> API : GET /attempts/{id}/exam + questions
+S -> S : start camera, load MediaPipe
+S -> API : POST face-verification (embedding)
+loop per frame / interval
+  S -> S : detect face, gaze, phone, book, audio
+end
+S -> API : POST proctoring-events (batched 5s)
+API -> DB : persist events
+API -> WS : broadcast(exam channel)
+WS --> I : live event
+note over S, API : flagged event -> one snapshot
+S -> API : POST /attempts/{id}/evidence (JPEG)
+S -> API : POST /attempts/{id}/submit
+API -> DB : status = SUBMITTED
+API -> WS : broadcast(status)
+API -> API : enqueue grade_attempt_task (Celery)
+@enduml
+
+' ---------- 4. STATE DIAGRAM ----------
+@startuml State
+[*] --> NotStarted
+NotStarted --> InProgress : join (PIN valid, SEB satisfied)
+state InProgress {
+  [*] --> Monitoring
+  Monitoring --> Warned : violation (strikes < 3)
+  Warned --> Monitoring : student resumes
+  Monitoring --> Terminated : strikes == 3
+  Warned --> Terminated : strikes == 3
+}
+InProgress --> Submitted : submit
+Terminated --> Submitted : forced close
+Submitted --> Graded : grading complete
+Graded --> [*]
+@enduml
+
+' ---------- 5. ACTIVITY DIAGRAM ----------
+@startuml Activity
+start
+:Open exam link;
+if (require_seb?) then (yes)
+  if (In Safe Exam Browser?) then (no)
+    :Block: SEB required;
+    stop
+  else (yes)
+  endif
+else (no)
+endif
+if (Face enrolled?) then (no)
+  :Guided 5-pose enrolment;
+else (yes)
+endif
+:Grant camera + enter fullscreen;
+repeat
+  :Run monitors (face, gaze, audio, object, environment);
+  if (Violation?) then (yes)
+    :Report event; snapshot if flagged;
+    if (strikes == 3?) then (yes)
+      :Terminate -> /test/blocked;
+      stop
+    else (no)
+      :Warn; resume;
+    endif
+  else (no)
+  endif
+repeat while (Submit pressed?) is (no)
+:Submit answers;
+:Celery grade (MCQ + AI short-answer);
+:Result + teacher review;
+stop
+@enduml
+
+' ---------- 6. COMPONENT DIAGRAM ----------
+@startuml Component
+package "Browser Client" {
+  [Next.js App-Router UI] as UI
+  [Proctoring hooks] as HK
+  [MediaPipe / Human WASM] as MP
+}
+package "Next.js Server" {
+  [/api/backend proxy] as PX
+  [NextAuth v5] as AU
+}
+package "FastAPI" {
+  [Routers] as RT
+  [Services] as SV
+  [Celery Workers] as WK
+}
+database "PostgreSQL" as PG
+database "Redis" as RD
+database "MinIO / S3" as S3
+cloud "Gemini API" as GM
+UI --> HK
+HK --> MP
+UI --> PX
+HK --> RT
+PX --> RT
+AU --> PX
+RT --> SV
+RT --> RD
+SV --> PG
+SV --> S3
+WK --> GM
+WK --> PG
+@enduml
+
+' ---------- 7. DEPLOYMENT DIAGRAM ----------
+@startuml Deployment
+node "Candidate / Teacher Device" {
+  [Browser + Webcam + Mic] as BR
+}
+node "Application Server" {
+  [Node.js: Next.js 16] as N
+  [uvicorn: FastAPI] as U
+  [Celery workers + beat] as C
+}
+node "Data Services" {
+  database "PostgreSQL" as PG
+  database "Redis" as RD
+  database "MinIO" as MO
+}
+cloud "Google Gemini API" as EX
+BR --> N : HTTPS / WSS
+BR --> U : HTTPS / WSS
+N --> U : HTTP
+U --> PG
+U --> RD
+U --> MO : S3 API
+C --> RD
+C --> PG
+C --> EX : HTTPS
+@enduml
+
+' ---------- 8. USE CASE DIAGRAM ----------
+@startuml UseCase
+left to right direction
+actor Teacher as T
+actor Student as S
+rectangle "CBA System" {
+  usecase "Register / Login" as UC1
+  usecase "Author exam" as UC2
+  usecase "Upload course PDF" as UC3
+  usecase "Generate questions (AI)" as UC4
+  usecase "Manage roster / groups" as UC5
+  usecase "Configure SEB / schedule" as UC6
+  usecase "Invigilate live" as UC7
+  usecase "Review / override grades" as UC8
+  usecase "View reports and evidence" as UC9
+  usecase "Join exam by PIN" as UC10
+  usecase "Enrol face" as UC11
+  usecase "Take proctored exam" as UC12
+  usecase "Submit answers" as UC13
+  usecase "View own result" as UC14
+}
+T -- UC1
+T -- UC2
+T -- UC3
+T -- UC4
+T -- UC5
+T -- UC6
+T -- UC7
+T -- UC8
+T -- UC9
+S -- UC1
+S -- UC10
+S -- UC11
+S -- UC12
+S -- UC13
+S -- UC14
+@enduml
+
+' ---------- 9. ER DIAGRAM ----------
+@startuml ER
+entity User { *id : uuid <<PK>>
+--
+email : string <<UK>>; password_hash; role }
+entity Exam { *id : uuid <<PK>>
+--
+exam_code <<UK>>; creator_id <<FK>>; subject_id <<FK>>; group_id <<FK>>; require_seb; timer_minutes }
+entity Question { *id : uuid <<PK>>
+--
+exam_id <<FK>>; type; options; correct_option; marks }
+entity ExamAttempt { *id : uuid <<PK>>
+--
+exam_id <<FK>>; student_id <<FK>>; status; total_score }
+entity Answer { *id : uuid <<PK>>
+--
+attempt_id <<FK>>; question_id <<FK>>; marks_awarded; teacher_reviewed }
+entity ProctoringEvent { *id : uuid <<PK>>
+--
+attempt_id <<FK>>; type; timestamp; event_metadata }
+entity EvidenceCapture { *id : uuid <<PK>>
+--
+attempt_id <<FK>>; event_type; s3_key }
+entity FaceEnrollment { *id : uuid <<PK>>
+--
+user_id <<FK>>; model_version }
+entity MLReview { *id : uuid <<PK>>
+--
+attempt_id <<FK>>; kind; result }
+entity Subject { *id : uuid <<PK>>
+--
+name }
+entity Group { *id : uuid <<PK>>
+--
+name; term }
+User ||--o{ Exam
+User ||--o{ ExamAttempt
+User ||--o| FaceEnrollment
+Subject ||--o{ Exam
+Group ||--o{ Exam
+Exam ||--|{ Question
+Exam ||--o{ ExamAttempt
+ExamAttempt ||--o{ Answer
+ExamAttempt ||--o{ ProctoringEvent
+ExamAttempt ||--o{ EvidenceCapture
+ExamAttempt ||--o{ MLReview
+Question ||--o{ Answer
+@enduml
+
+' ---------- 10. SEQUENCE: TEACHER AUTHORING ----------
+@startuml SeqTeacherAuthor
+actor "Teacher" as T
+participant "Proxy" as PX
+participant "FastAPI" as API
+participant "MinIO" as S3
+participant "Celery" as Q
+participant "Worker" as W
+participant "Gemini" as G
+database "PostgreSQL" as DB
+T -> API : GET /files/presigned-upload
+API --> T : presigned POST (10 MB)
+T -> S3 : POST course PDF
+T -> PX : POST /exams (require_seb)
+PX -> API : + Authorization
+API -> DB : insert Exam (PIN)
+API --> T : exam_id, PIN
+T -> PX : POST /questions/generate
+PX -> API : forward
+API -> Q : enqueue generate task
+API --> T : job_id
+W -> S3 : fetch PDF
+W -> G : generate MCQ + short-answer
+G --> W : structured questions
+W -> DB : insert Questions
+loop poll every 4s
+  T -> API : GET generation-status
+  API --> T : pending / completed
+end
+@enduml
+
+' ---------- 11. SEQUENCE: TEACHER INVIGILATION ----------
+@startuml SeqTeacherInvigilate
+actor "Instructor" as I
+participant "Proxy" as PX
+participant "FastAPI" as API
+participant "Redis" as R
+participant "WS Manager" as WS
+database "PostgreSQL" as DB
+I -> PX : POST /ws/ticket (exam_id)
+PX -> API : + Authorization
+API -> API : verify teacher owns exam
+API -> R : SET ws_ticket (60s, single-use)
+API --> I : ticket
+I -> WS : connect /ws/exams/{id}?ticket
+WS -> R : GETDEL ticket
+WS --> I : subscribed
+WS --> I : proctoring_event / attempt_status
+I -> PX : GET /attempts/{id}/evidence
+PX -> API : forward
+API -> DB : fetch captures
+API --> I : presigned image URLs
+I -> PX : PATCH review (override mark)
+PX -> API : forward
+API -> DB : update Answer, recompute total
+API --> I : updated score
+@enduml
+
+' ---------- 12. SEQUENCE: AUTH + TOKEN REFRESH ----------
+@startuml SeqAuth
+actor "User" as U
+participant "/api/backend Proxy" as PX
+participant "NextAuth Cookie" as NA
+participant "FastAPI" as API
+participant "Redis" as R
+U -> API : POST /auth/login
+API -> R : rate-limit check
+API --> U : access (60m) + refresh (rotating)
+U -> PX : API request (cookie only)
+PX -> NA : decrypt session
+alt access valid
+  PX -> API : request + Bearer
+else access expired
+  PX -> API : POST /auth/refresh
+  API -> R : check jti, rotate
+  API --> PX : new access + refresh
+  PX -> PX : re-encode cookie
+  PX -> API : retry + new Bearer
+end
+API --> PX : response
+PX --> U : response (token never in JS)
+@enduml
+
+' ---------- 13. STATE: QUESTION-GENERATION JOB ----------
+@startuml StateJob
+[*] --> Pending : enqueued
+Pending --> Processing : worker picks up
+Processing --> Completed : saved
+Processing --> Failed : error
+Failed --> Retrying : attempts < 3
+Retrying --> Processing : backoff
+Failed --> [*] : retries exhausted
+Completed --> [*]
+@enduml
+
+' ---------- 14. STATE: ANSWER REVIEW ----------
+@startuml StateAnswer
+[*] --> Unanswered
+Unanswered --> Saved : autosave (600ms)
+Saved --> Saved : edit again
+Saved --> Submitted : attempt submitted
+Unanswered --> Submitted : left blank
+Submitted --> AIGraded : MCQ / LLM
+AIGraded --> TeacherReviewed : override
+AIGraded --> [*] : accepted
+TeacherReviewed --> [*]
+@enduml
+
+' ---------- 15. STATE: WEBSOCKET CONNECTION ----------
+@startuml StateWS
+[*] --> MintingTicket
+MintingTicket --> Connecting : ticket issued
+MintingTicket --> Backoff : mint failed
+Connecting --> Open : ticket valid
+Connecting --> Backoff : rejected (4401)
+Open --> Open : ping / pong 25s
+Open --> Backoff : dropped
+Backoff --> MintingTicket : retry (max 30s)
+Open --> Closed : unmount
+Closed --> [*]
+@enduml
+
+' ---------- 16. ACTIVITY: TEACHER ----------
+@startuml ActivityTeacher
+start
+:Create or pick subject and group;
+:Upload course PDF;
+if (PDF valid and under 10 MB?) then (no)
+  :Re-upload;
+else (yes)
+endif
+:Set title, duration, question count;
+if (Schedule window?) then (yes)
+  :Set dates and daily times;
+else (no)
+endif
+if (Require SEB?) then (yes)
+  :Enable SEB gate;
+else (no)
+endif
+:Create exam and receive PIN;
+:AI generates questions (async);
+if (Generation done?) then (failed)
+  :Retry generation;
+else (completed)
+endif
+:Review and edit questions;
+:Share PIN;
+:Monitor live dashboard;
+:Review and override grades;
+stop
+@enduml

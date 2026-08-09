@@ -16,10 +16,10 @@ function BlockedContent() {
         <h2 className="text-2xl font-medium text-white mb-3">
           Exam terminated
         </h2>
-        <p className="text-[#B8AEA8] text-[15px] leading-relaxed mb-2">
+        <p className="text-[#9C96A8] text-[15px] leading-relaxed mb-2">
           {reason}
         </p>
-        <p className="text-[#9A8A7A] text-[13px] mt-4">
+        <p className="text-[#726C7E] text-[13px] mt-4">
           Your attempt has been recorded and flagged for review. Please contact
           your instructor if you believe this was a mistake.
         </p>

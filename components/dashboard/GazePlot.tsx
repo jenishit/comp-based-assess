@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import type { GazeSample } from "@/types/exam";
+import type { GazeSample } from "@/types/proctoring-types";
 
 interface GazePlotProps {
   samples: GazeSample[];
@@ -19,9 +19,9 @@ function severityOf(sample: GazeSample): Severity {
 }
 
 const COLOR: Record<Severity, string> = {
-  center: "#4C8B5D",
-  away: "#E0A93E",
-  sustained: "#DC4C4C",
+  center: "#4B7B6E",
+  away: "#D9A441",
+  sustained: "#D97D6C",
 };
 
 export default function GazePlot({ samples }: GazePlotProps) {
@@ -63,7 +63,7 @@ export default function GazePlot({ samples }: GazePlotProps) {
       .attr("x2", width - margin.right)
       .attr("y1", y(0.5))
       .attr("y2", y(0.5))
-      .attr("stroke", "#D8CDBF")
+      .attr("stroke", "#E4DFD1")
       .attr("stroke-dasharray", "4,3");
 
     svg
@@ -86,7 +86,7 @@ export default function GazePlot({ samples }: GazePlotProps) {
     : [];
 
   return (
-    <div ref={containerRef} className="bg-white rounded-xl border border-sand-border p-4">
+    <div ref={containerRef} className="bg-card rounded-xl border border-sand-border p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-bark uppercase tracking-wide">Gaze timeline</p>
         <div className="flex items-center gap-3 text-[10px] text-bark">

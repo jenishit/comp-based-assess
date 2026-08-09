@@ -1,71 +1,105 @@
-import axios from 'axios'
+import axios, { InternalAxiosRequestConfig } from 'axios'
 import { getSession, signOut } from 'next-auth/react'
 
+interface RequestMetadata {
+  startTime: number
+  url?: string
+  method?: string
+}
+
+type RequestConfigWithMetadata = InternalAxiosRequestConfig & {
+  metadata?: RequestMetadata
+  _skipGlobalSignOut?: boolean
+}
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    _skipGlobalSignOut?: boolean
+  }
+}
+
+/**
+ * All authenticated API traffic goes through the server-side proxy at
+ * /api/backend/* (app/api/backend/[...path]/route.ts), which injects the
+ * Authorization header from the httpOnly NextAuth cookie and transparently
+ * refreshes expired tokens. The browser never holds a backend token, so
+ * there is no client-side token cache, attach logic, or refresh queue here.
+ */
 const axiosInstance = axios.create({
-  baseURL: "/api/v1",
+  baseURL: '/api/backend',
   withCredentials: true,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
-    accept: 'application/json',
+    Accept: 'application/json',
     'Content-Type': 'application/json',
   },
 })
 
-// The bearer token, resolved lazily from the NextAuth session. Cached as a
-// single in-flight promise so concurrent requests share one /api/auth/session
-// lookup instead of each firing their own. Invalidated by refreshAuthToken() on
-// every auth transition (sign-in, sign-out, expiry).
-let tokenPromise: Promise<string | undefined> | null = null
+// Only one 401-triggered sign-out at a time — a burst of parallel requests
+// failing together must not stack redirects.
+let signingOut = false
 
-function resolveToken(): Promise<string | undefined> {
-  if (!tokenPromise) {
-    tokenPromise = getSession().then((session) => session?.accessToken)
-  }
-  return tokenPromise
-}
-
-// Drop the cached token so the next request re-reads the session. Call after any
-// auth transition so a stale (or stale-anonymous) token is never reused.
-export function refreshAuthToken(): void {
-  tokenPromise = null
-}
-
-// Attach the token at request time. Resolving it per-request from the session —
-// rather than mutating a shared default header from a React effect — means every
-// call is correctly authenticated regardless of component mount/effect ordering.
-// Because the interceptor awaits the token, a request fired before the session
-// has resolved simply waits for it instead of racing out with no header.
-axiosInstance.interceptors.request.use(async (config) => {
-  const token = await resolveToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+axiosInstance.interceptors.request.use(async (config: RequestConfigWithMetadata) => {
+  config.metadata = {
+    startTime: Date.now(),
+    url: config.url,
+    method: config.method,
   }
   return config
 })
 
-let isSigningOut = false
-
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const config = response.config as RequestConfigWithMetadata
+    const duration = config.metadata ? Date.now() - config.metadata.startTime : 0
+
+    if (duration > 5000 && process.env.NODE_ENV === 'development') {
+      console.warn(
+        `[Performance] Slow API request (${duration}ms): ${response.config.method?.toUpperCase()} ${response.config.url}`
+      )
+    }
+
+    return response
+  },
 
   async (error) => {
-    // Only force a sign-out when the failed request actually carried a token —
-    // i.e. a logged-in session expired or was revoked. A 401 on an anonymous
-    // request (a public marketplace page hitting an auth-gated endpoint) is
-    // expected and must NOT bounce the visitor to /signin; the caller handles it.
-    const hadToken = Boolean(error.config?.headers?.Authorization)
-    if (error.response?.status === 401 && hadToken && !isSigningOut) {
-      isSigningOut = true
+    if (!error.config || typeof window === 'undefined') {
+      return Promise.reject(error)
+    }
 
-      refreshAuthToken()
+    const originalRequest = error.config as RequestConfigWithMetadata
+    const duration = originalRequest.metadata
+      ? Date.now() - originalRequest.metadata.startTime
+      : 0
 
-      await signOut({
-        callbackUrl: '/login',
-      })
+    if (error.response?.status === 401 && !originalRequest._skipGlobalSignOut && !signingOut) {
+      // The proxy already tried to refresh before forwarding — a 401 landing
+      // here means the session is genuinely dead (revoked, reused refresh
+      // token, or logged out elsewhere). Sign out only if a NextAuth session
+      // exists; exam-taking students (capability-based, no session) just see
+      // the error.
+      const session = await getSession()
+      if (session) {
+        signingOut = true
+        console.error('[Auth] Session expired — redirecting to sign in')
+        await signOut({ callbackUrl: '/login' })
+        return Promise.reject(error)
+      }
+    }
+
+    if (error.response?.status !== 401 && process.env.NODE_ENV === 'development') {
+      console.error(
+        `[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${error.response?.status ?? 'network error'}`,
+        {
+          status: error.response?.status,
+          duration_ms: duration,
+          url: error.config?.url,
+        }
+      )
     }
 
     return Promise.reject(error)
-  },
+  }
 )
 
 export default axiosInstance
