@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { questionGenerationStatusGetService } from "@/services/exam-service";
 import type { Question } from "@/types/exam-types";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, Loader2 } from "lucide-react";
 
 const bloomColor: Record<string, string> = {
   remember: "text-gray-600 bg-gray-50",
@@ -15,6 +15,10 @@ const bloomColor: Record<string, string> = {
   evaluate: "text-orange-600 bg-orange-50",
   create: "text-purple-600 bg-purple-50",
 };
+
+function flaggedQuestionCount(questions: Question[]): number {
+  return questions.filter((q) => q.validationFlags && Object.keys(q.validationFlags).length > 0).length;
+}
 
 export default function ExamQuestionsPage() {
   const params = useParams();
@@ -51,6 +55,13 @@ export default function ExamQuestionsPage() {
 
       <h1 className="text-2xl font-display font-medium text-espresso tracking-tight mb-6">Questions</h1>
 
+      {questions && questions.length > 0 && flaggedQuestionCount(questions) > 0 && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4">
+          <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
+          {flaggedQuestionCount(questions)} question{flaggedQuestionCount(questions) === 1 ? "" : "s"} flagged for review — check for duplicates or weak distractors below.
+        </div>
+      )}
+
       {error ? (
         <p className="text-sm text-red-500">{error}</p>
       ) : questions === null ? (
@@ -68,7 +79,14 @@ export default function ExamQuestionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {questions.map((q, i) => (
+          {(() => {
+            const numberById = new Map(questions.map((q, i) => [q.id, i + 1]));
+            return questions.map((q, i) => {
+              const duplicateOf = q.validationFlags?.duplicate_of ?? [];
+              const distractorIssues = q.validationFlags?.distractor_issues ?? {};
+              const flaggedOptions = Object.keys(distractorIssues);
+
+              return (
             <div key={q.id} className="bg-card rounded-xl border border-sand-border p-5">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <p className="text-sm font-medium text-espresso">
@@ -77,11 +95,36 @@ export default function ExamQuestionsPage() {
                 <span className="text-xs text-bark shrink-0">{q.marks} mark{q.marks === 1 ? "" : "s"}</span>
               </div>
 
-              {q.bloomLevel && (
-                <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mb-3 ${bloomColor[q.bloomLevel] || "text-gray-600 bg-gray-50"}`}>
-                  {q.bloomLevel}
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                {q.bloomLevel && (
+                  <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${bloomColor[q.bloomLevel] || "text-gray-600 bg-gray-50"}`}>
+                    {q.bloomLevel}
+                  </span>
+                )}
+                {q.topic && (
+                  <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full text-bark bg-sand-light">
+                    {q.topic}
+                  </span>
+                )}
+                {duplicateOf.length > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full text-amber-700 bg-amber-50"
+                    title="Semantically similar to another generated question — check before publishing."
+                  >
+                    <AlertTriangle size={10} aria-hidden="true" />
+                    possible duplicate of Q{duplicateOf.map((id) => numberById.get(id)).filter(Boolean).join(", Q")}
+                  </span>
+                )}
+                {flaggedOptions.length > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full text-amber-700 bg-amber-50"
+                    title={flaggedOptions.map((letter) => `${letter}: ${distractorIssues[letter].join("; ")}`).join(" | ")}
+                  >
+                    <AlertTriangle size={10} aria-hidden="true" />
+                    weak distractor: {flaggedOptions.join(", ")}
+                  </span>
+                )}
+              </div>
 
               {q.type === "mcq" && q.options ? (
                 <ul className="space-y-1.5 mt-2">
@@ -103,7 +146,9 @@ export default function ExamQuestionsPage() {
                 <p className="text-xs text-bark mt-2">Short answer</p>
               )}
             </div>
-          ))}
+              );
+            });
+          })()}
         </div>
       )}
     </div>

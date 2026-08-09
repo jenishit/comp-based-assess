@@ -2,6 +2,12 @@ import type { ProctoringEventSummary } from "@/types/proctoring-types";
 
 export type QuestionType = "mcq" | "short_answer";
 
+export interface QuestionValidationFlags {
+  duplicate_of?: string[];
+  duplicate_score?: number;
+  distractor_issues?: Record<string, string[]>;
+}
+
 export interface Question {
   id: string;
   type: QuestionType;
@@ -10,6 +16,8 @@ export interface Question {
   correctIndex?: number;
   marks: number;
   bloomLevel?: "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create";
+  topic?: string;
+  validationFlags?: QuestionValidationFlags;
 }
 
 export interface Answer {
