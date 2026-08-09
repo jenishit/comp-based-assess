@@ -1,0 +1,221 @@
+{
+  "_type": "Project",
+  "_id": "PRJ-CBA",
+  "name": "CBA System",
+  "ownedElements": [
+    {
+      "_type": "UMLModel",
+      "_id": "MODEL-CBA",
+      "_parent": { "$ref": "PRJ-CBA" },
+      "name": "Domain Model",
+      "ownedElements": [
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-User",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "User",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-User-1", "_parent": { "$ref": "CLS-User" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-User-2", "_parent": { "$ref": "CLS-User" }, "name": "name", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-User-3", "_parent": { "$ref": "CLS-User" }, "name": "email", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-User-4", "_parent": { "$ref": "CLS-User" }, "name": "password_hash", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-User-5", "_parent": { "$ref": "CLS-User" }, "name": "role", "type": "UserRole" }
+          ],
+          "operations": [
+            { "_type": "UMLOperation", "_id": "O-User-1", "_parent": { "$ref": "CLS-User" }, "name": "login" },
+            { "_type": "UMLOperation", "_id": "O-User-2", "_parent": { "$ref": "CLS-User" }, "name": "change_password" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Exam",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "Exam",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Exam-1", "_parent": { "$ref": "CLS-Exam" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Exam-2", "_parent": { "$ref": "CLS-Exam" }, "name": "title", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Exam-3", "_parent": { "$ref": "CLS-Exam" }, "name": "exam_code", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Exam-4", "_parent": { "$ref": "CLS-Exam" }, "name": "timer_minutes", "type": "Integer" },
+            { "_type": "UMLAttribute", "_id": "A-Exam-5", "_parent": { "$ref": "CLS-Exam" }, "name": "require_seb", "type": "Boolean" },
+            { "_type": "UMLAttribute", "_id": "A-Exam-6", "_parent": { "$ref": "CLS-Exam" }, "name": "is_practice", "type": "Boolean" }
+          ],
+          "operations": [
+            { "_type": "UMLOperation", "_id": "O-Exam-1", "_parent": { "$ref": "CLS-Exam" }, "name": "generate_exam_code" },
+            { "_type": "UMLOperation", "_id": "O-Exam-2", "_parent": { "$ref": "CLS-Exam" }, "name": "availability_state" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Question",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "Question",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Q-1", "_parent": { "$ref": "CLS-Question" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Q-2", "_parent": { "$ref": "CLS-Question" }, "name": "type", "type": "QuestionType" },
+            { "_type": "UMLAttribute", "_id": "A-Q-3", "_parent": { "$ref": "CLS-Question" }, "name": "text", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Q-4", "_parent": { "$ref": "CLS-Question" }, "name": "options", "type": "JSON" },
+            { "_type": "UMLAttribute", "_id": "A-Q-5", "_parent": { "$ref": "CLS-Question" }, "name": "correct_option", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Q-6", "_parent": { "$ref": "CLS-Question" }, "name": "marks", "type": "Integer" },
+            { "_type": "UMLAttribute", "_id": "A-Q-7", "_parent": { "$ref": "CLS-Question" }, "name": "bloom_level", "type": "String" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Attempt",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "ExamAttempt",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-At-1", "_parent": { "$ref": "CLS-Attempt" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-At-2", "_parent": { "$ref": "CLS-Attempt" }, "name": "status", "type": "AttemptStatus" },
+            { "_type": "UMLAttribute", "_id": "A-At-3", "_parent": { "$ref": "CLS-Attempt" }, "name": "total_score", "type": "Float" },
+            { "_type": "UMLAttribute", "_id": "A-At-4", "_parent": { "$ref": "CLS-Attempt" }, "name": "started_at", "type": "DateTime" },
+            { "_type": "UMLAttribute", "_id": "A-At-5", "_parent": { "$ref": "CLS-Attempt" }, "name": "submitted_at", "type": "DateTime" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Answer",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "Answer",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-An-1", "_parent": { "$ref": "CLS-Answer" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-An-2", "_parent": { "$ref": "CLS-Answer" }, "name": "selected_option", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-An-3", "_parent": { "$ref": "CLS-Answer" }, "name": "text_answer", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-An-4", "_parent": { "$ref": "CLS-Answer" }, "name": "marks_awarded", "type": "Float" },
+            { "_type": "UMLAttribute", "_id": "A-An-5", "_parent": { "$ref": "CLS-Answer" }, "name": "teacher_reviewed", "type": "Boolean" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Event",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "ProctoringEvent",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Ev-1", "_parent": { "$ref": "CLS-Event" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Ev-2", "_parent": { "$ref": "CLS-Event" }, "name": "type", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Ev-3", "_parent": { "$ref": "CLS-Event" }, "name": "timestamp", "type": "Float" },
+            { "_type": "UMLAttribute", "_id": "A-Ev-4", "_parent": { "$ref": "CLS-Event" }, "name": "event_metadata", "type": "JSON" }
+          ],
+          "operations": [
+            { "_type": "UMLOperation", "_id": "O-Ev-1", "_parent": { "$ref": "CLS-Event" }, "name": "severity" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Evidence",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "EvidenceCapture",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Ec-1", "_parent": { "$ref": "CLS-Evidence" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Ec-2", "_parent": { "$ref": "CLS-Evidence" }, "name": "event_type", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Ec-3", "_parent": { "$ref": "CLS-Evidence" }, "name": "s3_key", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Ec-4", "_parent": { "$ref": "CLS-Evidence" }, "name": "timestamp", "type": "Float" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Face",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "FaceEnrollment",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Fe-1", "_parent": { "$ref": "CLS-Face" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Fe-2", "_parent": { "$ref": "CLS-Face" }, "name": "embeddings", "type": "Float[][]" },
+            { "_type": "UMLAttribute", "_id": "A-Fe-3", "_parent": { "$ref": "CLS-Face" }, "name": "model_version", "type": "String" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Review",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "MLReview",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Rv-1", "_parent": { "$ref": "CLS-Review" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Rv-2", "_parent": { "$ref": "CLS-Review" }, "name": "kind", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Rv-3", "_parent": { "$ref": "CLS-Review" }, "name": "result", "type": "JSON" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Group",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "Group",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Gr-1", "_parent": { "$ref": "CLS-Group" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Gr-2", "_parent": { "$ref": "CLS-Group" }, "name": "name", "type": "String" },
+            { "_type": "UMLAttribute", "_id": "A-Gr-3", "_parent": { "$ref": "CLS-Group" }, "name": "term", "type": "String" }
+          ]
+        },
+        {
+          "_type": "UMLClass",
+          "_id": "CLS-Subject",
+          "_parent": { "$ref": "MODEL-CBA" },
+          "name": "Subject",
+          "attributes": [
+            { "_type": "UMLAttribute", "_id": "A-Su-1", "_parent": { "$ref": "CLS-Subject" }, "name": "id", "type": "UUID" },
+            { "_type": "UMLAttribute", "_id": "A-Su-2", "_parent": { "$ref": "CLS-Subject" }, "name": "name", "type": "String" }
+          ]
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-User-Exam", "_parent": { "$ref": "MODEL-CBA" }, "name": "creates",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS1a", "_parent": { "$ref": "AS-User-Exam" }, "reference": { "$ref": "CLS-User" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS1b", "_parent": { "$ref": "AS-User-Exam" }, "reference": { "$ref": "CLS-Exam" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-User-Attempt", "_parent": { "$ref": "MODEL-CBA" }, "name": "takes",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS2a", "_parent": { "$ref": "AS-User-Attempt" }, "reference": { "$ref": "CLS-User" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS2b", "_parent": { "$ref": "AS-User-Attempt" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-User-Face", "_parent": { "$ref": "MODEL-CBA" }, "name": "enrols",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS3a", "_parent": { "$ref": "AS-User-Face" }, "reference": { "$ref": "CLS-User" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS3b", "_parent": { "$ref": "AS-User-Face" }, "reference": { "$ref": "CLS-Face" }, "multiplicity": "0..1", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Subject-Exam", "_parent": { "$ref": "MODEL-CBA" }, "name": "categorises",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS4a", "_parent": { "$ref": "AS-Subject-Exam" }, "reference": { "$ref": "CLS-Subject" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS4b", "_parent": { "$ref": "AS-Subject-Exam" }, "reference": { "$ref": "CLS-Exam" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Group-Exam", "_parent": { "$ref": "MODEL-CBA" }, "name": "assigned",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS5a", "_parent": { "$ref": "AS-Group-Exam" }, "reference": { "$ref": "CLS-Group" }, "multiplicity": "0..1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS5b", "_parent": { "$ref": "AS-Group-Exam" }, "reference": { "$ref": "CLS-Exam" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Exam-Question", "_parent": { "$ref": "MODEL-CBA" }, "name": "contains",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS6a", "_parent": { "$ref": "AS-Exam-Question" }, "reference": { "$ref": "CLS-Exam" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS6b", "_parent": { "$ref": "AS-Exam-Question" }, "reference": { "$ref": "CLS-Question" }, "multiplicity": "1..*", "navigable": true, "aggregation": "composite" }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Exam-Attempt", "_parent": { "$ref": "MODEL-CBA" }, "name": "has",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS7a", "_parent": { "$ref": "AS-Exam-Attempt" }, "reference": { "$ref": "CLS-Exam" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS7b", "_parent": { "$ref": "AS-Exam-Attempt" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Attempt-Answer", "_parent": { "$ref": "MODEL-CBA" }, "name": "records",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS8a", "_parent": { "$ref": "AS-Attempt-Answer" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS8b", "_parent": { "$ref": "AS-Attempt-Answer" }, "reference": { "$ref": "CLS-Answer" }, "multiplicity": "0..*", "navigable": true, "aggregation": "composite" }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Attempt-Event", "_parent": { "$ref": "MODEL-CBA" }, "name": "emits",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS9a", "_parent": { "$ref": "AS-Attempt-Event" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS9b", "_parent": { "$ref": "AS-Attempt-Event" }, "reference": { "$ref": "CLS-Event" }, "multiplicity": "0..*", "navigable": true, "aggregation": "composite" }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Attempt-Evidence", "_parent": { "$ref": "MODEL-CBA" }, "name": "captures",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS10a", "_parent": { "$ref": "AS-Attempt-Evidence" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS10b", "_parent": { "$ref": "AS-Attempt-Evidence" }, "reference": { "$ref": "CLS-Evidence" }, "multiplicity": "0..*", "navigable": true, "aggregation": "composite" }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Attempt-Review", "_parent": { "$ref": "MODEL-CBA" }, "name": "reviewed",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS11a", "_parent": { "$ref": "AS-Attempt-Review" }, "reference": { "$ref": "CLS-Attempt" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS11b", "_parent": { "$ref": "AS-Attempt-Review" }, "reference": { "$ref": "CLS-Review" }, "multiplicity": "0..*", "navigable": true }
+        },
+        {
+          "_type": "UMLAssociation", "_id": "AS-Question-Answer", "_parent": { "$ref": "MODEL-CBA" }, "name": "answered",
+          "end1": { "_type": "UMLAssociationEnd", "_id": "AS12a", "_parent": { "$ref": "AS-Question-Answer" }, "reference": { "$ref": "CLS-Question" }, "multiplicity": "1" },
+          "end2": { "_type": "UMLAssociationEnd", "_id": "AS12b", "_parent": { "$ref": "AS-Question-Answer" }, "reference": { "$ref": "CLS-Answer" }, "multiplicity": "0..*", "navigable": true }
+        }
+      ]
+    }
+  ]
+}

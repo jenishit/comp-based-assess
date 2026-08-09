@@ -1,10 +1,24 @@
-import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export async function GET() {
-  const session = await auth()
+// session.accessToken no longer exists (tokens are confined to the httpOnly
+// JWT cookie), so this route reads the token straight from the cookie — the
+// same way the /api/backend proxy does.
+function sessionCookieName(): string {
+  const authUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? ''
+  return authUrl.startsWith('https')
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token'
+}
 
-  if (!session?.accessToken) {
+export async function GET(req: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET
+  const cookieName = sessionCookieName()
+  const token = secret
+    ? await getToken({ req, secret, salt: cookieName, cookieName })
+    : null
+
+  if (!token?.accessToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -13,7 +27,7 @@ export async function GET() {
       `${process.env.NEXT_PUBLIC_BASE_URL}/users/me`,
       {
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${token.accessToken}`,
         },
       },
     )

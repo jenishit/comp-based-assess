@@ -1,41 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #FAF6EF;
-  --color-foreground: #1A100A;
-  --color-border: #E0D0B8;
-  --color-input: #E0D0B8;
-  --color-ring: #4A7C59;
-  --color-muted: #F0E8D6;
-  --color-muted-foreground: #8B6347;
-  --color-accent: #F0E8D6;
-  --color-accent-foreground: #1A100A;
-  --color-primary: #4A7C59;
-  --color-primary-foreground: #FAF6EF;
-  --color-secondary: #F0E8D6;
-  --color-secondary-foreground: #1A100A;
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #FAF6EF;
-  --color-card: #FAF6EF;
-  --color-card-foreground: #1A100A;
-  --color-popover: #FAF6EF;
-  --color-popover-foreground: #1A100A;
-  --color-forest: #4A7C59;
-  --color-forest-dark: #2E5C3A;
-  --color-sage: #7FB069;
-  --color-espresso: #1E1208;
-  --color-espresso-deep: #130C06;
-  --color-cream: #FAF6EF;
-  --color-sand: #C4A882;
-  --color-sand-light: #F0E8D6;
-  --color-sand-border: #E0D0B8;
-  --color-tan: #C4A882;
-  --color-tan-alt: #F0E8D6;
-  --color-dark: #1A100A;
-  --color-bark: #8B6347;
-  --color-olive: #6B7C3F;
-  --color-dk-forest: #2E5C3A;
-  --font-sans: Inter, system-ui, sans-serif;
+  --color-background: #F2EFE6;
+  --color-foreground: #2E2A3D;
+  --color-border: #E4DFD1;
+  --color-input: #E4DFD1;
+  --color-ring: #4B7B6E;
+  --color-muted: #F6EBD3;
+  --color-muted-foreground: #726C7E;
+  --color-accent: #F6EBD3;
+  --color-accent-foreground: #2E2A3D;
+  --color-primary: #4B7B6E;
+  --color-primary-foreground: #F2EFE6;
+  --color-secondary: #F6EBD3;
+  --color-secondary-foreground: #2E2A3D;
+  --color-destructive: #D97D6C;
+  --color-destructive-foreground: #F2EFE6;
+  --color-card: #FBFAF6;
+  --color-card-foreground: #2E2A3D;
+  --color-popover: #FBFAF6;
+  --color-popover-foreground: #2E2A3D;
+  --color-forest: #4B7B6E;
+  --color-forest-dark: #3C6459;
+  --color-sage: #4B7B6E;
+  --color-espresso: #211E2B;
+  --color-espresso-deep: #211E2B;
+  --color-cream: #F2EFE6;
+  --color-sand: #D9A441;
+  --color-sand-light: #F6EBD3;
+  --color-sand-border: #E4DFD1;
+  --color-tan: #D9A441;
+  --color-tan-alt: #F6EBD3;
+  --color-dark: #2E2A3D;
+  --color-bark: #726C7E;
+  --color-olive: #3C6459;
+  --color-dk-forest: #3C6459;
+  --color-gold: #D9A441;
+  --color-gold-soft: #F6EBD3;
+  --color-coral: #D97D6C;
+  --color-coral-soft: #F5E2DE;
+  --color-ink: #2E2A3D;
+  --color-ink-deep: #211E2B;
+  --color-paper: #F2EFE6;
+  --color-line: #E4DFD1;
+  --color-primary-soft: #E3EEE9;
+  --color-muted-light: #9C96A8;
+  --font-sans: var(--font-figtree), system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", monospace;
   --width-content: 1060px;
 }
 
@@ -53,4 +65,138 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Quiet proctoring status dot — a still point of color, not a badge */
+.quiet-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* Ticket-with-perforation motif for PIN / exam-ticket displays */
+.ticket-perforation {
+  position: relative;
+}
+.ticket-perforation::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-background);
+}
+.ticket-perforation::after {
+  content: "";
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-background);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.animate-breathe {
+  animation: breathe 2.6s ease-in-out infinite;
+}
+
+/* ---------- Reusable component patterns ---------- */
+
+.surface-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-sand-border);
+  box-shadow: 0 1px 2px rgba(46, 42, 61, 0.04), 0 16px 32px -20px rgba(46, 42, 61, 0.22);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover {
+  background: var(--color-forest-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -10px rgba(60, 100, 89, 0.5);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-on-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--color-gold);
+  color: var(--color-ink-deep);
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.btn-on-dark:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.btn-on-dark:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.btn-ghost:hover {
+  color: var(--color-forest-dark);
+}
+
+.input-warm {
+  border: 1.5px solid var(--color-sand-border);
+  background: var(--color-card);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-warm:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(75, 123, 110, 0.16);
 }

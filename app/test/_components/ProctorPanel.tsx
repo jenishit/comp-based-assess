@@ -1,7 +1,7 @@
 "use client"
 import { Camera, Mic, Eye, Users, AlertTriangle, Copy, Monitor, LucideIcon } from "lucide-react";
 import clsx from "clsx";
-import type { ProctoringState } from "@/types/exam";
+import type { ProctoringState } from "@/types/proctoring-types";
 
 interface ProctorPanelProps {
   proctoringState: ProctoringState;
@@ -38,7 +38,7 @@ function StatusRow({
         <Icon size={12} aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-medium text-[#1A100A] m-0 leading-none">{label}</p>
+        <p className="text-[12px] font-medium text-[#2E2A3D] m-0 leading-none">{label}</p>
         {detail && (
           <p className="text-[10px] text-bark m-0 mt-0.5 truncate">{detail}</p>
         )}
@@ -85,7 +85,7 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
         {/* Live badge */}
         {cameraReady && (
           <span className="absolute top-2 right-2 bg-red-500/90 text-white text-[9px]
-                           font-semibold px-1.5 py-0.5 rounded tracking-wide">
+                           font-semibold px-1.5 py-0.5 rounded tracking-wide animate-breathe">
             LIVE
           </span>
         )}
@@ -119,7 +119,7 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
       </div>
 
       {/* Proctoring status */}
-      <div className="bg-white rounded-xl border border-sand-border px-3 py-1">
+      <div className="bg-card rounded-xl border border-sand-border px-3 py-1">
         <StatusRow
           icon={Camera}
           label={
@@ -171,11 +171,11 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
           <div key={label}
                className={clsx(
                  "rounded-xl border p-3 text-center",
-                 bad ? "bg-red-50 border-red-200" : "bg-white border-sand-border"
+                 bad ? "bg-red-50 border-red-200" : "bg-card border-sand-border"
                )}>
             <Icon size={16} className={clsx("mx-auto mb-1", bad ? "text-red-500" : "text-bark")} />
             <p className={clsx("text-[20px] font-semibold m-0",
-                               bad ? "text-red-500" : "text-[#1A100A]")}>{val}</p>
+                               bad ? "text-red-500" : "text-[#2E2A3D]")}>{val}</p>
             <p className="text-[10px] text-bark m-0">{label}</p>
           </div>
         ))}

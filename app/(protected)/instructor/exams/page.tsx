@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { examService } from "@/services/exam-service";
-import type { ExamSummary } from "@/types/exam";
+import { examListService } from "@/services/exam-service";
+import type { ExamSummary } from "@/types/exam-types";
 import { FileText, PlusCircle, Users, Clock, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import AvailabilityBadge from "./_components/AvailabilityBadge";
 
 export default function ExamsListPage() {
   const [exams, setExams] = useState<ExamSummary[]>([]);
@@ -12,7 +13,7 @@ export default function ExamsListPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    examService.list().then(setExams).catch(() => {}).finally(() => setLoading(false));
+    examListService().then(setExams).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const copyPin = async (pin: string, id: string) => {
@@ -25,11 +26,11 @@ export default function ExamsListPage() {
     <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-espresso tracking-tight">My Exams</h1>
+          <h1 className="text-2xl font-display font-medium text-espresso tracking-tight">My Exams</h1>
           <p className="text-bark text-sm mt-1">Manage your exams and share PINs with students.</p>
         </div>
         <Link
-          href="/dashboard/exams/new"
+          href="/instructor/exams/new"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors no-underline"
         >
           <PlusCircle size={16} />
@@ -40,16 +41,16 @@ export default function ExamsListPage() {
       {loading ? (
         <div className="grid gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white rounded-xl border border-sand-border animate-pulse" />
+            <div key={i} className="h-24 bg-card rounded-xl border border-sand-border animate-pulse" />
           ))}
         </div>
       ) : exams.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-sand-border">
+        <div className="text-center py-16 bg-card rounded-xl border border-sand-border">
           <FileText size={40} className="mx-auto text-sand mb-3" />
           <h3 className="text-base font-medium text-espresso mb-1">No exams yet</h3>
           <p className="text-sm text-bark mb-4">Create your first exam to get started.</p>
           <Link
-            href="/dashboard/exams/new"
+            href="/instructor/exams/new"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-forest text-white text-sm font-medium hover:bg-forest-dark transition-colors no-underline"
           >
             <PlusCircle size={16} />
@@ -61,14 +62,14 @@ export default function ExamsListPage() {
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className="bg-white rounded-xl border border-sand-border p-4 flex items-center gap-4 hover:border-sage transition-colors"
+              className="bg-card rounded-xl border border-sand-border p-4 flex items-center gap-4 hover:border-sage transition-colors"
             >
               <div className="w-10 h-10 rounded-lg bg-forest/10 flex items-center justify-center shrink-0">
                 <FileText size={18} className="text-forest" />
               </div>
 
               <div className="flex-1 min-w-0">
-                <Link href={`/dashboard/exams/${exam.id}`} className="no-underline">
+                <Link href={`/instructor/exams/${exam.id}`} className="no-underline">
                   <h3 className="text-sm font-semibold text-espresso truncate hover:text-forest transition-colors">
                     {exam.title}
                   </h3>
@@ -90,6 +91,7 @@ export default function ExamsListPage() {
                 }`}>
                   {exam.status}
                 </span>
+                <AvailabilityBadge window={exam} />
               </div>
 
               <button
@@ -101,7 +103,7 @@ export default function ExamsListPage() {
               </button>
 
               <Link
-                href={`/dashboard/exams/${exam.id}`}
+                href={`/instructor/exams/${exam.id}`}
                 className="text-xs font-medium text-forest hover:underline shrink-0 no-underline"
               >
                 View details

@@ -28,7 +28,7 @@ export default function QuestionNav({
               onClick={() => onSelect(i)}
               title={`Question ${i + 1}${isAnswered ? " — answered" : ""}${isFlagged ? " — flagged" : ""}`}
               className={clsx(
-                "h-8 w-full rounded-lg text-[12px] font-medium border transition-all",
+                "h-8 w-full rounded-lg text-[12px] font-mono font-medium border transition-all",
                 isCurrent
                   ? "bg-forest text-white border-forest shadow-sm"
                   : isAnswered && isFlagged
@@ -37,7 +37,7 @@ export default function QuestionNav({
                   ? "bg-forest/15 text-forest-dark border-forest/30"
                   : isFlagged
                   ? "bg-amber-50 text-amber-500 border-amber-200"
-                  : "bg-white text-[#5A4A3A] border-sand-border hover:bg-sand-light"
+                  : "bg-card text-[#726C7E] border-sand-border hover:bg-sand-light"
               )}
             >
               {i + 1}
