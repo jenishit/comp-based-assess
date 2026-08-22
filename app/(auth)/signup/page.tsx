@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Suspense, useState } from "react";
 import { registerService } from "@/services/auth-service";
+import { isAxiosError } from "axios";
 import { RegisterPayload } from "@/types/auth-types";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
@@ -75,7 +76,10 @@ function SignupPageContent() {
       router.push(data.user_type === "TEACHER" ? "/instructor" : "/student");
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong while registering you. Please try again later");
+      const detail = isAxiosError(err)
+        ? (err.response?.data as { detail?: string } | undefined)?.detail
+        : undefined;
+      toast.error(detail ?? "Something went wrong while registering you. Please try again later");
     } finally {
       setLoading(false);
     }

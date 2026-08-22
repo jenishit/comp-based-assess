@@ -19,7 +19,7 @@ export default function Navbar() {
             <ShieldCheck size={14} color="#fff" aria-hidden="true" />
           </div>
           <span className="font-display italic text-[18px] text-espresso tracking-tight">
-            PracticeHub
+            EduQuest
           </span>
         </div>
         <div className="hidden md:flex gap-8 flex-1">
