@@ -1,10 +1,10 @@
 "use client";
-import { useRef, useCallback, Suspense } from "react";
+import { useRef, useCallback, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Send, Loader2, ArrowRight, ShieldAlert } from "lucide-react";
+import { Send, Loader2, ArrowRight, ShieldAlert, Maximize2 } from "lucide-react";
 import { useProctoringMonitor } from "@/hooks/useProctoringMonitor";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 import { useExamSecurity } from "@/hooks/useExamSecurity";
@@ -41,6 +41,12 @@ function ExamPageContent() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Browsers only grant requestFullscreen() from a synchronous user gesture
+  // (a click) — a call made from a useEffect after the async exam-data fetch
+  // resolves has no such gesture and is silently rejected. This gate's
+  // button click is that gesture; see the render branch below.
+  const [fullscreenEntered, setFullscreenEntered] = useState(false);
+
   const {
     exam,
     loading,
@@ -62,8 +68,12 @@ function ExamPageContent() {
   // navigator) off the SSR path — exam is null there, so requireSeb is false.
   const sebBlocked = (exam?.requireSeb ?? false) && !isSafeExamBrowser();
 
-  // Camera, monitors, and the attempt itself must not start while blocked.
-  const active = !submitted && !loading && !sebBlocked;
+  // Camera, monitors, and the attempt itself must not start until the
+  // student has clicked through the fullscreen gate below — this is also
+  // the point where camera/mic permission requests first fire, which is the
+  // right anti-cheat posture (an explicit "begin" gesture before any
+  // surveillance starts), not an accidental side effect.
+  const active = !submitted && !loading && !sebBlocked && fullscreenEntered;
 
   // Telemetry from all monitors is buffered locally and flushed as one
   // batched request every 5s (only when something was actually collected)
@@ -161,6 +171,34 @@ function ExamPageContent() {
               View detailed results <ArrowRight size={16} aria-hidden="true" />
             </Link>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!fullscreenEntered) {
+    return (
+      <div className="min-h-screen bg-espresso flex items-center justify-center px-6">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-forest/20 flex items-center justify-center mx-auto mb-4">
+            <Maximize2 size={28} className="text-sage" aria-hidden="true" />
+          </div>
+          <h2 className="text-2xl font-medium text-white mb-2">This exam requires fullscreen</h2>
+          <p className="text-[#9C96A8] text-[15px] leading-relaxed mb-6">
+            Click below to enter fullscreen and begin. Your camera and microphone will start once you do.
+          </p>
+          <button
+            onClick={() => {
+              const result = document.documentElement.requestFullscreen?.();
+              if (result) {
+                result.catch(() => { /* user or browser denied — still let the exam begin */ });
+              }
+              setFullscreenEntered(true);
+            }}
+            className="px-6 py-3 rounded-xl bg-forest text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer border-0"
+          >
+            Enter fullscreen &amp; begin
+          </button>
         </div>
       </div>
     );

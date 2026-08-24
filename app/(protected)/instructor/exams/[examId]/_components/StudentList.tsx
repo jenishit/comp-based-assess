@@ -19,6 +19,7 @@ const eventIcon: Record<string, typeof AlertTriangle> = {
   face_absent: Eye,
   face_returned: Eye,
   multiple_faces: Users,
+  identity_mismatch: ShieldAlert,
   gaze_away: Eye,
   voice_detected: Mic,
   tab_switch: Monitor,

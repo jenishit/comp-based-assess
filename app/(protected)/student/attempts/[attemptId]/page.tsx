@@ -7,6 +7,7 @@ import type { AttemptResult } from "@/types/attempt-types";
 import { Loader2, Check, Clock, GraduationCap } from "lucide-react";
 import AnswerResultList from "./_components/AnswerResultList";
 import ProctoringSummaryList from "./_components/ProctoringSummaryList";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
 
 const statusCopy: Record<AttemptResult["status"], { label: string; icon: typeof Clock; className: string }> = {
   in_progress: { label: "In progress", icon: Clock, className: "text-amber-700 bg-amber-100" },
@@ -91,6 +92,13 @@ export default function StudentAttemptResultPage() {
           </p>
         </div>
       </div>
+
+      {Object.keys(result.bloom_level_performance).length > 0 && (
+        <div className="mb-6 bg-card rounded-xl border border-sand-border p-5">
+          <h2 className="text-sm font-semibold text-espresso mb-3">Your Bloom&apos;s level performance</h2>
+          <BloomRadarChart data={result.bloom_level_performance} />
+        </div>
+      )}
 
       <AnswerResultList answers={result.answers} />
       <ProctoringSummaryList events={result.proctoring_events} />

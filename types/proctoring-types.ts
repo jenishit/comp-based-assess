@@ -2,6 +2,7 @@ export type ProctoringEventType =
   | "face_absent"
   | "face_returned"
   | "multiple_faces"
+  | "identity_mismatch"
   | "gaze_away"
   | "gaze_returned"
   | "voice_detected"

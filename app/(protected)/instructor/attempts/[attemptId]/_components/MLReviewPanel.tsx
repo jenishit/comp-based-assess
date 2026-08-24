@@ -33,11 +33,22 @@ export default function MLReviewPanel({ reviews }: MLReviewPanelProps) {
           const Icon = meta.icon;
           const entries = Object.entries(review.result).filter(([key]) => key !== "note");
           const note = review.result.note as string | undefined;
+          const isMismatch = review.result.review_flag === "mismatch";
           return (
-            <div key={i} className="rounded-xl border border-sand-border bg-card p-4">
+            <div
+              key={i}
+              className={`rounded-xl border p-4 ${
+                isMismatch ? "border-red-300 bg-red-50" : "border-sand-border bg-card"
+              }`}
+            >
               <div className="flex items-center gap-2 mb-2">
-                <Icon size={15} className="text-forest shrink-0" aria-hidden="true" />
+                <Icon size={15} className={isMismatch ? "text-red-600 shrink-0" : "text-forest shrink-0"} aria-hidden="true" />
                 <p className="text-sm font-medium text-espresso">{meta.label}</p>
+                {isMismatch && (
+                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                    Mismatch
+                  </span>
+                )}
                 <span className="text-[10px] text-bark ml-auto">
                   {new Date(review.created_at).toLocaleString()}
                 </span>

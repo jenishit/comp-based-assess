@@ -29,6 +29,11 @@ export interface ExamHistoryRow {
   status: string;
 }
 
+export interface ExamBloomReport {
+  graded_attempts: number;
+  bloom_level_performance: Record<string, number>;
+}
+
 export interface AnnualReport {
   status: string;
   completed_exams?: number;

@@ -6,7 +6,10 @@ import { useSession } from "next-auth/react";
 import { FileText, Users, Clock, Activity, Key, Upload, ClipboardList, PlusCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import { studentDashboardStatsGetService, teacherDashboardStatsGetService } from "@/services/dashboard-service";
+import { myBloomReportGetService } from "@/services/academic-service";
 import type { StudentDashboardStats, TeacherDashboardStats } from "@/types/dashboard-types";
+import type { ExamBloomReport } from "@/types/academic-types";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
 
 function formatDuration(minutes: number | null): string {
   if (minutes === null) return "--";
@@ -22,6 +25,7 @@ export default function DashboardHome() {
   const { data: session } = useSession();
   const [teacherStats, setTeacherStats] = useState<TeacherDashboardStats | null>(null);
   const [studentStatsData, setStudentStatsData] = useState<StudentDashboardStats | null>(null);
+  const [bloomSummary, setBloomSummary] = useState<ExamBloomReport | null>(null);
 
   const userType = session?.role || user?.role || "STUDENT";
   const isTeacher = userType === "TEACHER";
@@ -31,6 +35,7 @@ export default function DashboardHome() {
       teacherDashboardStatsGetService().then(setTeacherStats).catch(() => {});
     } else {
       studentDashboardStatsGetService().then(setStudentStatsData).catch(() => {});
+      myBloomReportGetService().then(setBloomSummary).catch(() => {});
     }
   }, [isTeacher]);
 
@@ -111,6 +116,14 @@ export default function DashboardHome() {
           </div>
         ))}
       </div>
+
+      {bloomSummary && bloomSummary.graded_attempts > 0 && (
+        <div className="bg-card rounded-xl border border-sand-border p-5 mb-8">
+          <h2 className="text-base font-semibold text-espresso mb-1">My Bloom&apos;s performance</h2>
+          <p className="text-xs text-bark mb-3">Across {bloomSummary.graded_attempts} graded exam(s)</p>
+          <BloomRadarChart data={bloomSummary.bloom_level_performance} />
+        </div>
+      )}
 
       <div className="bg-card rounded-xl border border-sand-border p-5">
         <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>

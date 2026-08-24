@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { examGetService, questionGenerateService, questionGenerationStatusGetService } from "@/services/exam-service";
+import { examBloomReportGetService } from "@/services/academic-service";
 import type { ExamDetail, QuestionJob } from "@/types/exam-types";
+import type { ExamBloomReport } from "@/types/academic-types";
 import { Copy, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import RosterPanel from "./_components/RosterPanel";
@@ -11,11 +13,13 @@ import ExamStats from "./_components/ExamStats";
 import StudentList from "./_components/StudentList";
 import AvailabilityBadge from "../_components/AvailabilityBadge";
 import { useExamLiveMonitor } from "@/hooks/useExamLiveMonitor";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
 
 export default function ExamDetailPage() {
   const params = useParams();
   const examId = params?.examId as string;
   const [exam, setExam] = useState<ExamDetail | null>(null);
+  const [bloomReport, setBloomReport] = useState<ExamBloomReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<QuestionJob["status"] | null>(null);
@@ -29,6 +33,11 @@ export default function ExamDetailPage() {
   useEffect(() => {
     if (!examId) return;
     examGetService(examId).then(setExam).catch(() => {}).finally(() => setLoading(false));
+  }, [examId]);
+
+  useEffect(() => {
+    if (!examId) return;
+    examBloomReportGetService(examId).then(setBloomReport).catch(() => {});
   }, [examId]);
 
   useEffect(() => {
@@ -149,6 +158,14 @@ export default function ExamDetailPage() {
         retrying={retrying}
         onRetry={handleRetry}
       />
+
+      {bloomReport && bloomReport.graded_attempts > 0 && (
+        <div className="bg-card rounded-xl border border-sand-border p-5 mb-6">
+          <h2 className="text-sm font-semibold text-espresso mb-1">Class Bloom&apos;s performance</h2>
+          <p className="text-xs text-bark mb-3">{bloomReport.graded_attempts} graded attempt(s)</p>
+          <BloomRadarChart data={bloomReport.bloom_level_performance} />
+        </div>
+      )}
 
       <div className="mb-6">
         <RosterPanel examId={exam.id} groupLinked={Boolean(exam.group_id)} />
