@@ -5,27 +5,43 @@ import clsx from "clsx";
 
 interface ExamTimerProps {
   durationMinutes: number;
+  /** Server-assigned attempt start time (ISO string) — the deadline the
+   * backend actually enforces is startedAt + durationMinutes, fixed from
+   * attempt creation regardless of how long this component took to mount
+   * (loading, permission prompts, the fullscreen gate). Anchoring to this
+   * instead of "seconds since mount" keeps the displayed countdown in sync
+   * with the server, so it can't show time remaining after the server has
+   * already expired the attempt. Falls back to a mount-relative countdown
+   * if omitted. */
+  startedAt?: string;
   onExpire: () => void;
 }
 
-export default function ExamTimer({ durationMinutes, onExpire }: ExamTimerProps) {
+function computeRemaining(totalSeconds: number, startedAt?: string): number {
+  if (!startedAt) return totalSeconds;
+  const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+  return Math.max(0, totalSeconds - elapsed);
+}
+
+export default function ExamTimer({ durationMinutes, startedAt, onExpire }: ExamTimerProps) {
   const totalSeconds = durationMinutes * 60;
-  const [remaining, setRemaining] = useState(totalSeconds);
+  const [remaining, setRemaining] = useState(() => computeRemaining(totalSeconds, startedAt));
   const calledRef = useRef(false);
 
   useEffect(() => {
+    // Recompute from wall-clock time each tick (rather than decrementing a
+    // local counter) so a throttled/backgrounded tab catches up correctly
+    // instead of drifting from the server's actual deadline.
     const id = setInterval(() => {
-      setRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(id);
-          if (!calledRef.current) { calledRef.current = true; onExpire(); }
-          return 0;
-        }
-        return prev - 1;
-      });
+      const next = computeRemaining(totalSeconds, startedAt);
+      setRemaining(next);
+      if (next <= 0 && !calledRef.current) {
+        calledRef.current = true;
+        onExpire();
+      }
     }, 1000);
     return () => clearInterval(id);
-  }, [onExpire]);
+  }, [onExpire, totalSeconds, startedAt]);
 
   const pct  = remaining / totalSeconds;
   const mins = Math.floor(remaining / 60);

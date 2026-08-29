@@ -6,9 +6,10 @@ interface ExamHeaderProps {
   exam: ExamSession;
   answeredCount: number;
   onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
-export default function ExamHeader({ exam, answeredCount, onSubmit }: ExamHeaderProps) {
+export default function ExamHeader({ exam, answeredCount, onSubmit, isSubmitting }: ExamHeaderProps) {
   return (
     <header className="bg-espresso px-6 py-3 flex items-center gap-4 shrink-0 border-b border-[#2E2A3D]">
       <div className="flex items-center gap-2 shrink-0">
@@ -29,15 +30,17 @@ export default function ExamHeader({ exam, answeredCount, onSubmit }: ExamHeader
         <span className="text-[12px] text-[#726C7E]">
           {answeredCount} / {exam.questions.length} answered
         </span>
-        <ExamTimer durationMinutes={exam.durationMinutes} onExpire={onSubmit} />
+        <ExamTimer durationMinutes={exam.durationMinutes} startedAt={exam.startedAt} onExpire={onSubmit} />
         <button
           onClick={onSubmit}
+          disabled={isSubmitting}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-forest
                      text-white text-[13px] font-medium border-0 cursor-pointer
-                     hover:bg-forest-dark transition-colors"
+                     hover:bg-forest-dark transition-colors
+                     disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Send size={14} aria-hidden="true" />
-          Submit
+          {isSubmitting ? "Submitting…" : "Submit"}
         </button>
       </div>
     </header>

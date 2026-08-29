@@ -65,12 +65,20 @@ export function useObjectDetection(
     (async () => {
       try {
         const vision = await FilesetResolver.forVisionTasks(WASM_BASE_PATH);
-        const detector = await ObjectDetector.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate: "GPU" },
-          runningMode: "VIDEO",
+        const optionsFor = (delegate: "GPU" | "CPU") => ({
+          baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate },
+          runningMode: "VIDEO" as const,
           scoreThreshold: MIN_SCORE,
           maxResults: 5,
         });
+        let detector;
+        try {
+          detector = await ObjectDetector.createFromOptions(vision, optionsFor("GPU"));
+        } catch {
+          // No usable WebGL context — same CPU-delegate fallback as
+          // useProctoringMonitor's FaceLandmarker.
+          detector = await ObjectDetector.createFromOptions(vision, optionsFor("CPU"));
+        }
         if (cancelled) {
           detector.close();
           return;

@@ -17,12 +17,14 @@ import { useEvidenceCapturer } from "@/hooks/useEvidenceCapturer";
 import { isSafeExamBrowser } from "@/lib/proctoring/environment-check";
 import type { ProctoringEvent } from "@/types/proctoring-types";
 import ExamHeader from "../_components/ExamHeader";
+import ExamTimer from "../_components/ExamTimer";
 import ExamNavFooter from "../_components/ExamNavFooter";
 import ProctorPanel from "../_components/ProctorPanel";
 import QuestionNav from "../_components/QuestionNav";
 import QuestionCard from "../_components/QuestionCard";
 import SecurityWarningModal from "../_components/SecurityWarningModal";
 import DevToolsBlockedBanner from "../_components/DevToolsBlockedBanner";
+import DeviceCheckStep, { type CalibratedAudioThresholds } from "../_components/DeviceCheckStep";
 
 // Renders nothing — isolates useFaceVerificationCapture's @vladmandic/human
 // import chain from SSR (its Node.js build needs @tensorflow/tfjs-node,
@@ -47,6 +49,17 @@ function ExamPageContent() {
   // button click is that gesture; see the render branch below.
   const [fullscreenEntered, setFullscreenEntered] = useState(false);
 
+  // Camera/mic permission + noise calibration happens before the fullscreen
+  // gate on purpose: if the mic prompt is still pending once fullscreen is
+  // active, the permission popup itself can force the browser back out of
+  // fullscreen — which useExamSecurity then reads as a fullscreen_exit
+  // violation the student never actually committed. Resolving both prompts
+  // here, before requestFullscreen() is ever called, means useProctoringMonitor
+  // and useAudioMonitor's later getUserMedia calls just reuse the
+  // already-granted permission with no new prompt.
+  const [deviceCheckDone, setDeviceCheckDone] = useState(false);
+  const [audioThresholds, setAudioThresholds] = useState<CalibratedAudioThresholds | null>(null);
+
   const {
     exam,
     loading,
@@ -56,6 +69,7 @@ function ExamPageContent() {
     answers,
     flagged,
     submitted,
+    isSubmitting,
     answered,
     handleAnswer,
     toggleFlag,
@@ -68,11 +82,11 @@ function ExamPageContent() {
   // navigator) off the SSR path — exam is null there, so requireSeb is false.
   const sebBlocked = (exam?.requireSeb ?? false) && !isSafeExamBrowser();
 
-  // Camera, monitors, and the attempt itself must not start until the
-  // student has clicked through the fullscreen gate below — this is also
-  // the point where camera/mic permission requests first fire, which is the
-  // right anti-cheat posture (an explicit "begin" gesture before any
-  // surveillance starts), not an accidental side effect.
+  // Monitors and the attempt itself must not start until the student has
+  // clicked through the fullscreen gate below — camera/mic permission was
+  // already granted during the device-check step above it, so this is an
+  // explicit "begin" gesture before surveillance starts, not the point
+  // permissions first fire.
   const active = !submitted && !loading && !sebBlocked && fullscreenEntered;
 
   // Telemetry from all monitors is buffered locally and flushed as one
@@ -92,20 +106,41 @@ function ExamPageContent() {
   );
 
   const proctoringState = useProctoringMonitor(videoRef, { attemptId, enabled: active, onEvent: onProctoringEvent });
-  const audioState = useAudioMonitor({ attemptId, enabled: active, onEvent: onProctoringEvent });
+  const audioState = useAudioMonitor({
+    attemptId,
+    enabled: active,
+    onEvent: onProctoringEvent,
+    ...(audioThresholds ?? {}),
+  });
   useKeystrokeDynamics({ attemptId, enabled: active });
   useEnvironmentCheck({ enabled: active, onEvent: onProctoringEvent });
   useObjectDetection(videoRef, { enabled: active, onEvent: onProctoringEvent });
 
-  // Stable identity — see the long comment above handleViolationRef in
-  // useExamSecurity.ts for why an inline arrow function here previously
-  // caused the fullscreen enforcement effect to tear down and re-run (exit
-  // + re-enter real browser fullscreen) on every re-render of this page.
+  // Identity churning here is fine — see the long comment above
+  // handleViolationRef in useExamSecurity.ts: only the fullscreen/DOM-listener
+  // effects (gated on [enabled, attemptId], reading handleViolationRef.current
+  // at call time) need a stable identity, and this isn't one of them.
+  //
+  // Termination previously only logged a session_terminated proctoring
+  // *event* and redirected — the attempt itself stayed IN_PROGRESS server
+  // side forever, so refreshing (or just revisiting) /test/[pin] resumed
+  // the live exam right past the "blocked" screen. handleSubmit() is the
+  // same flush-answers-then-POST-/submit path a normal submission takes,
+  // which flips attempt.status server-side and is what get_attempt_exam's
+  // status field (checked in useExamAttempt below) then reflects on the
+  // next load. Fire-and-forget: the redirect must not wait on the network.
   const onExamTerminated = useCallback(
     (reason: string) => {
-      router.push(`/test/blocked?reason=${encodeURIComponent(reason)}`);
+      void handleSubmit();
+      // replace, not push: a pushed entry leaves the live exam page one
+      // Back tap away, which could resume it (briefly — with a stale mic/
+      // camera stream still attached) before the fetch in useExamAttempt
+      // below catches up and re-locks it. Replacing removes that page from
+      // history entirely, so Back from /test/blocked goes to wherever the
+      // student was before the exam, never back into it.
+      router.replace(`/test/blocked?reason=${encodeURIComponent(reason)}`);
     },
-    [router],
+    [router, handleSubmit],
   );
 
   // 1-warning, 2nd-strike rule; also owns fullscreen/pointer-lock enforcement.
@@ -176,6 +211,17 @@ function ExamPageContent() {
     );
   }
 
+  if (!deviceCheckDone) {
+    return (
+      <DeviceCheckStep
+        onComplete={(thresholds) => {
+          setAudioThresholds(thresholds);
+          setDeviceCheckDone(true);
+        }}
+      />
+    );
+  }
+
   if (!fullscreenEntered) {
     return (
       <div className="min-h-screen bg-espresso flex items-center justify-center px-6">
@@ -184,9 +230,20 @@ function ExamPageContent() {
             <Maximize2 size={28} className="text-sage" aria-hidden="true" />
           </div>
           <h2 className="text-2xl font-medium text-white mb-2">This exam requires fullscreen</h2>
-          <p className="text-[#9C96A8] text-[15px] leading-relaxed mb-6">
-            Click below to enter fullscreen and begin. Your camera and microphone will start once you do.
+          <p className="text-[#9C96A8] text-[15px] leading-relaxed mb-4">
+            Click below to enter fullscreen and begin.
           </p>
+          {/* Your exam clock started the moment you joined, not when you
+              click through this screen — shown here so time spent reading
+              this page is never invisible. */}
+          <div className="flex flex-col items-center gap-1.5 mb-6">
+            <p className="text-[11px] text-[#726C7E] uppercase tracking-wide">Time remaining</p>
+            <ExamTimer
+              durationMinutes={exam.durationMinutes}
+              startedAt={exam.startedAt}
+              onExpire={handleSubmit}
+            />
+          </div>
           <button
             onClick={() => {
               const result = document.documentElement.requestFullscreen?.();
@@ -222,7 +279,7 @@ function ExamPageContent() {
       ) : (
         warning && <SecurityWarningModal warning={warning} onDismiss={dismissWarning} />
       )}
-      <ExamHeader exam={exam} answeredCount={answered.size} onSubmit={handleSubmit} />
+      <ExamHeader exam={exam} answeredCount={answered.size} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
 
       <div className="flex flex-1 min-h-0">
         <aside className="w-67 shrink-0 bg-sand-light border-r border-sand-border overflow-y-auto flex flex-col gap-5 p-4">
@@ -256,6 +313,7 @@ function ExamPageContent() {
             onPrev={() => setCurrentIdx((i) => Math.max(0, i - 1))}
             onNext={() => setCurrentIdx((i) => Math.min(exam.questions.length - 1, i + 1))}
             onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
           />
         </main>
       </div>

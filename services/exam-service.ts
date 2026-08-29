@@ -31,6 +31,13 @@ export interface AttemptExam {
   subject?: string;
   duration_minutes: number;
   require_seb?: boolean;
+  // The backend's ground truth for whether this attempt is still live — see
+  // useExamAttempt's initial-load check. Never assume "in_progress" just
+  // because this attempt_id resolves; it may already have been submitted
+  // (normally, on timeout, or on a proctoring termination) in a different
+  // tab/session.
+  status: "in_progress" | "submitted" | "graded";
+  started_at?: string;
 }
 
 export const examCreateService = async (payload: CreateExamPayload): Promise<ExamDetail> => {

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { isAxiosError } from "axios";
 import { attemptExamGetService, attemptQuestionsGetService, attemptAnswerSubmitService, attemptSubmitService } from "@/services/exam-service";
 import type { ExamSession, Answer, Question } from "@/types/exam-types";
 import { toast } from "sonner";
@@ -13,7 +14,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
   const router = useRouter();
 
   const [examMeta, setExamMeta] = useState<{
-    exam_id: string; title: string; subject?: string; duration_minutes: number; require_seb?: boolean;
+    exam_id: string; title: string; subject?: string; duration_minutes: number; require_seb?: boolean; started_at?: string;
   } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
   const [answers, setAnswers] = useState<Map<string, Answer>>(new Map());
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const startRef = useRef<Record<string, number>>({});
 
@@ -40,6 +42,19 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
         ]);
         if (cancelled) return;
         setExamMeta(exam);
+        // Ground truth from the server, not local component state — this is
+        // what actually stops a revisited/refreshed attempt (submitted
+        // normally, on timeout, or on a proctoring termination) from
+        // resuming as if it were still live. See AttemptExam.status.
+        //
+        // The toast only fires on this path (a fresh load discovering an
+        // already-finalized attempt), never right after a live student
+        // clicks Submit themselves — that flow sets `submitted` locally
+        // without a refetch, so it never hits this branch.
+        if (exam.status !== "in_progress") {
+          setSubmitted(true);
+          toast.info("You've already attempted this exam.");
+        }
         setQuestions(
           [...qs]
             .sort((a, b) => a.order - b.order)
@@ -73,6 +88,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
       studentName: "",
       studentEmail: "",
       requireSeb: examMeta.require_seb ?? false,
+      startedAt: examMeta.started_at,
     };
   }, [examMeta, questions, pin]);
 
@@ -165,8 +181,19 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
     }
   }, [currentIdx, exam, flagged, answers, syncAnswer]);
 
+  // Guards against two overlapping calls (a double-click on Submit — it has
+  // no disabled-while-submitting state — or ExamTimer's onExpire firing at
+  // the same moment a student manually clicks Submit). `submitted` alone
+  // isn't enough: it only flips after the first call's await resolves, so a
+  // second call landing before that still reads it as false and fires its
+  // own POST /submit, which the server correctly 400s as already-submitted
+  // — that 400 was being shown to the student as "Failed to submit".
+  const submittingRef = useRef(false);
+
   const handleSubmit = useCallback(async () => {
-    if (submitted) return;
+    if (submitted || submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     try {
       // Flush any answers still sitting in a debounce window so the last
       // few keystrokes aren't lost if the student submits right after typing.
@@ -187,8 +214,19 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
 
       await attemptSubmitService(attemptId);
       setSubmitted(true);
-    } catch {
-      toast.error("Failed to submit — please try again.");
+    } catch (err) {
+      // The only 400 submit_attempt returns is "Attempt already submitted"
+      // — i.e. a concurrent call (or termination's own handleSubmit call,
+      // see onExamTerminated in the exam page) already succeeded. That's
+      // this attempt being done, not a failure to submit.
+      if (isAxiosError(err) && err.response?.status === 400) {
+        setSubmitted(true);
+      } else {
+        toast.error("Failed to submit — please try again.");
+      }
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   }, [submitted, attemptId, answers]);
 
@@ -208,6 +246,7 @@ export function useExamAttempt({ attemptId, pin }: UseExamAttemptOptions) {
     answers,
     flagged,
     submitted,
+    isSubmitting,
     answered,
     handleAnswer,
     toggleFlag,

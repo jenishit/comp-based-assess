@@ -37,6 +37,11 @@ export interface ExamSession {
   studentName: string;
   studentEmail: string;
   requireSeb: boolean;
+  /** Server-assigned attempt start time (ISO string) — the exam timer
+   * anchors to this rather than to whenever the timer component happens to
+   * mount, since the server's deadline is fixed from this moment regardless
+   * of client-side loading/gate delays. */
+  startedAt?: string;
 }
 
 // Recurring-daily availability window state, evaluated server-side (server

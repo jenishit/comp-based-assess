@@ -30,12 +30,23 @@ const HUMAN_CONFIG: Partial<Config> = {
 
 let loadPromise: Promise<Human> | null = null;
 
+async function loadHumanWithBackend(backend: "webgl" | "wasm"): Promise<Human> {
+  const human = new Human({ ...HUMAN_CONFIG, backend });
+  await human.load();
+  return human;
+}
+
 function getHuman(): Promise<Human> {
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
-    const human = new Human(HUMAN_CONFIG);
-    await human.load();
-    return human;
+    try {
+      return await loadHumanWithBackend("webgl");
+    } catch {
+      // No usable WebGL context (common without hardware-accelerated
+      // rendering, e.g. a VM or software-rendering setup) — wasm is
+      // Human's CPU-based backend, bundled, always available in-browser.
+      return await loadHumanWithBackend("wasm");
+    }
   })();
   return loadPromise;
 }

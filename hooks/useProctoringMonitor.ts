@@ -171,20 +171,34 @@ export function useProctoringMonitor(
           }
           gazeAwaySinceRef.current = null;
         }
+      } else if (gazeAwaySinceRef.current !== null || state.gazeAway) {
+        // No face this frame — the last gaze reading is now unknowable, not
+        // still true. Leaving it stale is what produces "No face detected"
+        // and "Looking at screen" showing at the same time.
+        gazeAwaySinceRef.current = null;
+        patchState({ gazeAway: false, gazeDirection: "center" });
       }
     },
-    [patchState, reportEvent, estimateGaze],
+    [patchState, reportEvent, estimateGaze, state.gazeAway],
   );
 
   const initFaceLandmarker = useCallback(async (): Promise<void> => {
     const vision = await FilesetResolver.forVisionTasks(WASM_BASE_PATH);
-    faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate: "GPU" },
-      runningMode: "VIDEO",
+    const optionsFor = (delegate: "GPU" | "CPU") => ({
+      baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate },
+      runningMode: "VIDEO" as const,
       numFaces: 3,
       minFaceDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
+    try {
+      faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, optionsFor("GPU"));
+    } catch {
+      // No usable WebGL context (common without hardware-accelerated
+      // rendering, e.g. a VM or software-rendering setup) — CPU delegate
+      // runs the same model via WASM, slower per-frame but needs no GPU.
+      faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, optionsFor("CPU"));
+    }
   }, []);
 
   // detectForVideo requires a strictly increasing timestamp on each call to
@@ -307,11 +321,17 @@ export function useProctoringMonitor(
     if (!enabled) return;
     let cancelled = false;
 
+    // Camera and face-detection init are independent — the camera has no
+    // dependency on the landmarker, so a landmarker failure (e.g. no usable
+    // GPU/WASM runtime at all, even after the CPU-delegate fallback above)
+    // must not also leave the camera preview stuck offline.
+    (async () => {
+      await startCamera();
+    })();
+
     (async () => {
       try {
         await initFaceLandmarker();
-        if (cancelled) return;
-        await startCamera();
         if (cancelled) return;
         rafRef.current = requestAnimationFrame(processFrame);
       } catch {
