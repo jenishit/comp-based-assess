@@ -3,14 +3,11 @@ import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 
 interface BloomRadarChartProps {
-  // Bloom's level -> score percentage (0-100), e.g. AnnualReport.bloom_level_performance,
-  // AttemptResult.bloom_level_performance, ExamBloomReport.bloom_level_performance.
   data: Record<string, number>;
-  size?: number;
+  width?: number;   // NEW: canvas width (wider than height)
+  height?: number;  // NEW: canvas height (drives the circle radius)
 }
 
-// Grounded in the Literal constraint on Question.bloom_level (see
-// backend/app/schemas/ai_mcq.py) — five lowercase levels, no "create".
 const BLOOM_ORDER = ["remember", "understand", "apply", "analyze", "evaluate"];
 const BLOOM_LABELS: Record<string, string> = {
   remember: "Remember",
@@ -32,13 +29,14 @@ const COLOR = {
   point: "#4B7B6E",
 };
 
-export default function BloomRadarChart({ data, size = 280 }: BloomRadarChartProps) {
+export default function BloomRadarChart({
+  data,
+  width = 420,   // was `size` (square) — now wider than height
+  height = 280,  // radius is derived from this
+}: BloomRadarChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // Always show all five canonical axes (missing ones plot as 0, so the
-  // polygon still closes correctly), plus any unexpected/legacy level keys
-  // (e.g. "Unknown") appended after, sorted.
   const levels = useMemo(
     () => [
       ...BLOOM_ORDER,
@@ -54,38 +52,42 @@ export default function BloomRadarChart({ data, size = 280 }: BloomRadarChartPro
     if (!svgRef.current || !hasData) return;
 
     const svg = d3.select<SVGSVGElement, unknown>(svgRef.current);
-    svg.selectAll("*").remove(); // redraw cleanly whenever data changes
-    svg.attr("width", size).attr("height", size).attr("viewBox", `0 0 ${size} ${size}`);
+    svg.selectAll("*").remove();
+    svg.attr("width", width).attr("height", height).attr("viewBox", `0 0 ${width} ${height}`);
 
-    const center = size / 2;
-    const maxRadius = center - 44;
+    // centerX/centerY are independent now — the circle can sit in the
+    // middle of a canvas that's wider than it is tall.
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Radius is capped by the SHORTER dimension (height), so the extra
+    // width becomes pure margin for the left/right labels, not more circle.
+    const maxRadius = Math.min(width, height) / 2 - 55;
     const angleSlice = (2 * Math.PI) / levels.length;
     const radiusScale = d3.scaleLinear().domain([0, 100]).range([0, maxRadius]);
 
     const pointAt = (angle: number, r: number): [number, number] => [
-      center + r * Math.sin(angle),
-      center - r * Math.cos(angle),
+      centerX + r * Math.sin(angle),
+      centerY - r * Math.cos(angle),
     ];
 
     const g = svg.append("g");
 
-    // Concentric percentage gridlines.
     [25, 50, 75, 100].forEach((pct) => {
       g.append("circle")
-        .attr("cx", center)
-        .attr("cy", center)
+        .attr("cx", centerX)
+        .attr("cy", centerY)
         .attr("r", radiusScale(pct))
         .attr("fill", "none")
         .attr("stroke", COLOR.grid);
     });
 
-    // Axis spokes + labels.
     levels.forEach((level, i) => {
       const angle = i * angleSlice;
       const [x, y] = pointAt(angle, maxRadius);
       g.append("line")
-        .attr("x1", center)
-        .attr("y1", center)
+        .attr("x1", centerX)
+        .attr("y1", centerY)
         .attr("x2", x)
         .attr("y2", y)
         .attr("stroke", COLOR.grid);
@@ -102,7 +104,6 @@ export default function BloomRadarChart({ data, size = 280 }: BloomRadarChartPro
         .text(bloomLabel(level));
     });
 
-    // Data polygon.
     const values = levels.map((l) => data[l] ?? 0);
     const lineRadial = d3
       .lineRadial<number>()
@@ -112,20 +113,19 @@ export default function BloomRadarChart({ data, size = 280 }: BloomRadarChartPro
 
     g.append("path")
       .attr("d", lineRadial(values))
-      .attr("transform", `translate(${center},${center})`)
+      .attr("transform", `translate(${centerX},${centerY})`)
       .attr("fill", COLOR.fill)
       .attr("fill-opacity", 0.25)
       .attr("stroke", COLOR.stroke)
       .attr("stroke-width", 2);
 
-    // Vertex markers with native tooltips.
     levels.forEach((level, i) => {
       const angle = i * angleSlice;
       const [x, y] = pointAt(angle, radiusScale(values[i]));
       const point = g.append("circle").attr("cx", x).attr("cy", y).attr("r", 3.5).attr("fill", COLOR.point);
       point.append("title").text(`${bloomLabel(level)}: ${values[i]}%`);
     });
-  }, [data, size, hasData, levels]);
+  }, [data, width, height, hasData, levels]);
 
   return (
     <div ref={containerRef} className="flex justify-center">
