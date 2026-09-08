@@ -25,10 +25,9 @@ const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const ACCESS_TOKEN_LIFETIME_MS = 55 * 60 * 1000;
 
 function sessionCookieName(): string {
-  const authUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "";
-  return authUrl.startsWith("https")
+  return process.env.NODE_ENV === "production"
     ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
+    : "authjs.session-token"
 }
 
 async function refreshTokens(token: JWT): Promise<JWT | null> {

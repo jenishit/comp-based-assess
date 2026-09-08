@@ -11,10 +11,9 @@ const BACKEND_BASE =
 // JWT cookie), so this route reads the token straight from the cookie — the
 // same way the /api/backend proxy does.
 function sessionCookieName(): string {
-  const authUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? ''
-  return authUrl.startsWith('https')
-    ? '__Secure-authjs.session-token'
-    : 'authjs.session-token'
+  return process.env.NODE_ENV === "production"
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token"
 }
 
 export async function GET(req: NextRequest) {
