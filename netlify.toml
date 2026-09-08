@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # NEXT_PUBLIC_* variables are meant to be exposed to the client,
+  # but Netlify's secrets scanner flags them as secrets. Exclude them.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_BASE_URL"
+
+[[redirects]]
+  from = "/_next/image"
+  query = { q = ":quality", url = ":url", w = ":width" }
+  status = 200
+  to = "/.netlify/images?url=:url&w=:width&q=:quality"
+
+[[redirects]]
+  from = "/_ipx/*"
+  query = { q = ":quality", url = ":url", w = ":width" }
+  status = 200
+  to = "/.netlify/images?url=:url&w=:width&q=:quality"
+
+[[redirects]]
+  from = "/_next/image"
+  status = 200
+  to = "/.netlify/images"
+
+[headers]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
