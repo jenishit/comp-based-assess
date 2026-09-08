@@ -18,7 +18,7 @@ export const changePassword = z
       .min(8, "Password needs to be 8 characters long")
       .refine((val) => passwordRegex.test(val), {
         message:
-          "Password needs to have at least one uppercase, one lowercasem one number and one special character",
+          "Password needs to have at least one uppercase, one lowercase, one number and one special character",
       }),
     confirm_password: z.string(),
   })
@@ -42,7 +42,7 @@ export const signUpSchema = z.object({
     .min(8, "Password needs to be 8 characters long")
     .refine((val) => passwordRegex.test(val), {
       message:
-        "Password needs to have at least one uppercase, one lowercasem one number and one special character",
+        "Password needs to have at least one uppercase, one lowercase, one number and one special character",
     }),
   confirm_password: z.string(),
   user_type: z.string().min(2, "Select a role")

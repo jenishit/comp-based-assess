@@ -35,7 +35,7 @@ export default function Hero({ onOpenStudent, isAuthenticated, dashboardHref }: 
         </h1>
 
         <p className="text-lg max-w-xl mx-auto mb-10 text-bark">
-          Upload your material, set the terms, and let PracticeHub handle the
+          Upload your material, set the terms, and let EduQuest handle the
           watching — so everyone in the room can{" "}
           <span className="font-display italic text-espresso">
             just focus on the questions

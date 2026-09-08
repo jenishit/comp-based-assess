@@ -6,9 +6,10 @@ interface ExamNavFooterProps {
   onPrev: () => void;
   onNext: () => void;
   onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
-export default function ExamNavFooter({ currentIdx, total, onPrev, onNext, onSubmit }: ExamNavFooterProps) {
+export default function ExamNavFooter({ currentIdx, total, onPrev, onNext, onSubmit, isSubmitting }: ExamNavFooterProps) {
   const isLast = currentIdx === total - 1;
 
   return (
@@ -31,11 +32,13 @@ export default function ExamNavFooter({ currentIdx, total, onPrev, onNext, onSub
       {isLast ? (
         <button
           onClick={onSubmit}
+          disabled={isSubmitting}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
                      border-0 bg-forest text-white text-[14px] font-medium
-                     hover:bg-forest-dark transition-colors cursor-pointer"
+                     hover:bg-forest-dark transition-colors cursor-pointer
+                     disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Submit exam <Send size={14} />
+          {isSubmitting ? "Submitting…" : "Submit exam"} <Send size={14} />
         </button>
       ) : (
         <button

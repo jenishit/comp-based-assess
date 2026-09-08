@@ -1,5 +1,5 @@
 import axiosInstance from "@/axios/instance";
-import type { Subject, Group, GroupMember, GroupMemberEntry, AnnualReport } from "@/types/academic-types";
+import type { Subject, Group, GroupMember, GroupMemberEntry, AnnualReport, ExamBloomReport } from "@/types/academic-types";
 
 // ── Subjects ──────────────────────────────────────────────
 
@@ -79,5 +79,15 @@ export const groupMemberRemoveService = async (groupId: string, studentId: strin
 
 export const annualReportGetService = async (studentId: string, term: string): Promise<AnnualReport> => {
   const response = await axiosInstance.get(`/reports/annual/${studentId}`, { params: { term } });
+  return response.data;
+};
+
+export const examBloomReportGetService = async (examId: string): Promise<ExamBloomReport> => {
+  const response = await axiosInstance.get(`/reports/exam/${examId}/bloom`);
+  return response.data;
+};
+
+export const myBloomReportGetService = async (): Promise<ExamBloomReport> => {
+  const response = await axiosInstance.get(`/reports/me/bloom`);
   return response.data;
 };

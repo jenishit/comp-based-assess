@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PracticeHub — AI-Powered Assessment Platform',
+  title: 'EduQuest — AI-Powered Assessment Platform',
   description:
     'Generate scenario-based, LLM-resistant exam questions from your course materials. ' +
     'Run secure online exams with live proctoring and instant automated grading.',

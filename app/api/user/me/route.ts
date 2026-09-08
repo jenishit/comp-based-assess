@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
+// This route runs server-side (inside the web container) — NEXT_PUBLIC_BASE_URL
+// is the browser-facing origin and isn't reachable from in here. Same
+// fallback chain app/api/backend/[...path]/route.ts and lib/auth/auth.config.ts use.
+const BACKEND_BASE =
+  process.env.BACKEND_INTERNAL_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:8001/api/v1'
+
 // session.accessToken no longer exists (tokens are confined to the httpOnly
 // JWT cookie), so this route reads the token straight from the cookie — the
 // same way the /api/backend proxy does.
@@ -24,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/users/me`,
+      `${BACKEND_BASE}/users/me`,
       {
         headers: {
           Authorization: `Bearer ${token.accessToken}`,

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { attemptGetService, attemptGazeSamplesGetService, attemptReviewGetService } from "@/services/exam-service";
 import GazePlot from "@/components/dashboard/GazePlot";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
 import { useProctoringWebSocket } from "@/hooks/useProctoringWebSocket";
 import type { GazeSample } from "@/types/proctoring-types";
 import type { AttemptDetail, AnswerReview } from "@/types/attempt-types";
@@ -19,6 +20,7 @@ import EvidenceGallery from "./_components/EvidenceGallery";
 const CLIENT_SEVERITY: Record<string, string> = {
   multiple_faces: "high", voice_detected: "high", multiple_speakers: "high",
   fullscreen_exit: "high", pointer_lock_exit: "high", session_terminated: "high",
+  identity_mismatch: "high",
   face_absent: "medium", paste_event: "medium", tab_switch: "medium", window_blur: "medium",
 };
 const GAZE_EVENT_TYPES = new Set(["gaze_away", "gaze_returned", "gaze_sample"]);
@@ -94,7 +96,7 @@ export default function AttemptDetailPage() {
     return <div className="text-center py-16 text-bark">Attempt not found.</div>;
   }
 
-  const { attempt, answers, proctoring_events, ml_reviews } = data;
+  const { attempt, answers, proctoring_events, ml_reviews, bloom_level_performance } = data;
 
   const handleScoreUpdated = (newTotalScore: number) => {
     setData((prev) => (prev ? { ...prev, attempt: { ...prev.attempt, score: newTotalScore } } : prev));
@@ -108,6 +110,13 @@ export default function AttemptDetailPage() {
       </div>
 
       <AttemptStats attempt={attempt} />
+
+      {Object.keys(bloom_level_performance).length > 0 && (
+        <div className="mb-6 bg-card rounded-xl border border-sand-border p-5">
+          <h2 className="text-sm font-semibold text-espresso mb-3">Bloom&apos;s level performance</h2>
+          <BloomRadarChart data={bloom_level_performance} />
+        </div>
+      )}
 
       <div className="mb-6">
         <GazePlot samples={gazeSamples} />

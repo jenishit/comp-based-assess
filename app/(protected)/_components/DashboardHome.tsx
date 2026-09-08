@@ -1,23 +1,50 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useUserStore } from "@/stores/user-store";
 import { useSession } from "next-auth/react";
 import { FileText, Users, Clock, Activity, Key, Upload, ClipboardList, PlusCircle, Settings } from "lucide-react";
 import Link from "next/link";
+import { studentDashboardStatsGetService, teacherDashboardStatsGetService } from "@/services/dashboard-service";
+import { myBloomReportGetService } from "@/services/academic-service";
+import type { StudentDashboardStats, TeacherDashboardStats } from "@/types/dashboard-types";
+import type { ExamBloomReport } from "@/types/academic-types";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
+
+function formatDuration(minutes: number | null): string {
+  if (minutes === null) return "--";
+  return minutes < 1 ? "<1 min" : `${Math.round(minutes)} min`;
+}
+
+function formatPercent(pct: number | null): string {
+  return pct === null ? "--" : `${pct}%`;
+}
 
 export default function DashboardHome() {
   const { user, loading } = useUserStore();
   const { data: session } = useSession();
+  const [teacherStats, setTeacherStats] = useState<TeacherDashboardStats | null>(null);
+  const [studentStatsData, setStudentStatsData] = useState<StudentDashboardStats | null>(null);
+  const [bloomSummary, setBloomSummary] = useState<ExamBloomReport | null>(null);
 
   const userType = session?.role || user?.role || "STUDENT";
   const isTeacher = userType === "TEACHER";
 
+  useEffect(() => {
+    if (isTeacher) {
+      teacherDashboardStatsGetService().then(setTeacherStats).catch(() => {});
+    } else {
+      studentDashboardStatsGetService().then(setStudentStatsData).catch(() => {});
+      myBloomReportGetService().then(setBloomSummary).catch(() => {});
+    }
+  }, [isTeacher]);
+
   if (isTeacher) {
     const stats = [
-      { label: "Total Exams", value: "--", icon: FileText, color: "text-forest" },
-      { label: "Total Students", value: "--", icon: Users, color: "text-sage" },
-      { label: "Active Sessions", value: "--", icon: Activity, color: "text-olive" },
-      { label: "Avg. Duration", value: "--", icon: Clock, color: "text-bark" },
+      { label: "Total Exams", value: teacherStats ? String(teacherStats.total_exams) : "--", icon: FileText, color: "text-forest" },
+      { label: "Total Students", value: teacherStats ? String(teacherStats.total_students) : "--", icon: Users, color: "text-sage" },
+      { label: "Active Sessions", value: teacherStats ? String(teacherStats.active_sessions) : "--", icon: Activity, color: "text-olive" },
+      { label: "Avg. Duration", value: teacherStats ? formatDuration(teacherStats.avg_duration_minutes) : "--", icon: Clock, color: "text-bark" },
     ];
 
     return (
@@ -63,10 +90,10 @@ export default function DashboardHome() {
   }
 
   const studentStats = [
-    { label: "Exams Taken", value: "--", icon: ClipboardList, color: "text-forest" },
-    { label: "Avg. Score", value: "--", icon: Activity, color: "text-sage" },
-    { label: "Upcoming", value: "--", icon: Clock, color: "text-olive" },
-    { label: "Files Uploaded", value: "--", icon: Upload, color: "text-bark" },
+    { label: "Exams Taken", value: studentStatsData ? String(studentStatsData.exams_taken) : "--", icon: ClipboardList, color: "text-forest" },
+    { label: "Avg. Score", value: studentStatsData ? formatPercent(studentStatsData.avg_score_pct) : "--", icon: Activity, color: "text-sage" },
+    { label: "Upcoming", value: studentStatsData ? String(studentStatsData.upcoming) : "--", icon: Clock, color: "text-olive" },
+    { label: "Practice Exams", value: studentStatsData ? String(studentStatsData.files_uploaded) : "--", icon: Upload, color: "text-bark" },
   ];
 
   return (
@@ -90,6 +117,14 @@ export default function DashboardHome() {
         ))}
       </div>
 
+      {bloomSummary && bloomSummary.graded_attempts > 0 && (
+        <div className="bg-card rounded-xl border border-sand-border p-5 mb-8">
+          <h2 className="text-base font-semibold text-espresso mb-1">My Bloom&apos;s performance</h2>
+          <p className="text-xs text-bark mb-3">Across {bloomSummary.graded_attempts} graded exam(s)</p>
+          <BloomRadarChart data={bloomSummary.bloom_level_performance} />
+        </div>
+      )}
+
       <div className="bg-card rounded-xl border border-sand-border p-5">
         <h2 className="text-base font-semibold text-espresso mb-4">Quick Actions</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -97,7 +132,7 @@ export default function DashboardHome() {
             <Key size={16} className="inline mr-2 mb-0.5" />
             Join an exam
           </Link>
-          <Link href="/student/upload" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
+          <Link href="/student/practice" className="block rounded-lg border border-sand-border bg-cream px-4 py-3.5 text-sm font-medium text-espresso hover:bg-sand-light hover:border-sage transition-colors no-underline">
             <Upload size={16} className="inline mr-2 mb-0.5" />
             Upload study material
           </Link>

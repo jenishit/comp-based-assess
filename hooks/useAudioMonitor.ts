@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ProctoringEvent, ProctoringEventType } from "@/types/proctoring-types";
 import { createEventThrottle } from "@/lib/proctoring/create-event-throttle";
+import { rms, variance, voiceBins } from "@/lib/proctoring/audio-metrics";
 
 export interface AudioMonitorState {
   voiceDetected: boolean;
@@ -30,23 +31,6 @@ const INITIAL: AudioMonitorState = {
   error: null,
 };
 
-function rms(bins: Uint8Array): number {
-  if (bins.length === 0) return 0;
-  let sum = 0;
-  for (let i = 0; i < bins.length; i++) sum += bins[i] * bins[i];
-  return Math.sqrt(sum / bins.length);
-}
-
-function variance(bins: Uint8Array): number {
-  if (bins.length === 0) return 0;
-  let sum = 0;
-  for (let i = 0; i < bins.length; i++) sum += bins[i];
-  const mean = sum / bins.length;
-  let sq = 0;
-  for (let i = 0; i < bins.length; i++) sq += (bins[i] - mean) ** 2;
-  return sq / bins.length;
-}
-
 export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorState {
   const {
     enabled = true,
@@ -64,6 +48,7 @@ export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorSt
   const rafRef = useRef<number>(0);
   const canFireRef = useRef(createEventThrottle<ProctoringEventType>());
   const voiceSinceRef = useRef<number | null>(null);
+  const multiSinceRef = useRef<number | null>(null);
   // Holds the latest `analyse` so the rAF loop below can call it recursively
   // without referencing the `useCallback`-bound identifier from within its own body.
   const analyseRef = useRef<() => void>(() => {});
@@ -89,11 +74,9 @@ export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorSt
 
     analyser.getByteFrequencyData(data as unknown as Uint8Array<ArrayBuffer>);
 
-    // Speech range ~150-3000 Hz. At fftSize=512, sampleRate≈44100 Hz, bin
-    // width ≈86 Hz, so bins 2-35 ≈172-3010 Hz.
-    const voiceBins = data.subarray(2, 36);
-    const amplitude = rms(voiceBins);
-    const spectralVar = variance(voiceBins);
+    const bins = voiceBins(data);
+    const amplitude = rms(bins);
+    const spectralVar = variance(bins);
     const noiseLevel = Math.min(100, Math.round((amplitude / 255) * 100));
     const voiceNow = amplitude > voiceThreshold;
     const multiNow = voiceNow && spectralVar > multiSpeakerThreshold;
@@ -110,8 +93,16 @@ export function useAudioMonitor(options: UseAudioMonitorOptions): AudioMonitorSt
       voiceSinceRef.current = null;
     }
 
+    // Same sustain requirement as voice_detected — one noisy frame (a door
+    // slam, a burst of AC hum) has high variance too; only a second voice
+    // actually overlapping the student's for a beat should count.
     if (multiNow) {
-      fireEvent("multiple_speakers", 8_000, { variance: Math.round(spectralVar), noiseLevel });
+      if (!multiSinceRef.current) multiSinceRef.current = now;
+      if (now - multiSinceRef.current >= 1_500) {
+        fireEvent("multiple_speakers", 8_000, { variance: Math.round(spectralVar), noiseLevel });
+      }
+    } else {
+      multiSinceRef.current = null;
     }
 
     setState({ voiceDetected: voiceNow, multipleSpeakers: multiNow, noiseLevel, error: null });

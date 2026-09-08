@@ -1,4 +1,4 @@
-import { AlertTriangle, Eye, Mic, Monitor, Users, FileText, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Eye, Mic, Monitor, Users, FileText, ShieldCheck, ShieldAlert } from "lucide-react";
 import type { AttemptResultProctoringEvent } from "@/types/attempt-types";
 
 const severityColor: Record<string, string> = {
@@ -16,6 +16,7 @@ const severityBadge: Record<string, string> = {
 const eventIcon: Record<string, typeof AlertTriangle> = {
   face_absent: Eye,
   multiple_faces: Users,
+  identity_mismatch: ShieldAlert,
   gaze_away: Eye,
   voice_detected: Mic,
   tab_switch: Monitor,

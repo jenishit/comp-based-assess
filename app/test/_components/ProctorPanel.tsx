@@ -59,7 +59,12 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
   const faceOk      = faceCount === 1;
   const faceWarn    = faceCount === 0;
   const faceMulti   = faceCount > 1;
-  const gazeOk      = !gazeAway;
+  // Gaze is only known while exactly one face is being tracked — with no
+  // face in frame it must not read as "ok" (that's the "No face detected"
+  // + "Looking at screen" contradiction) nor as a gaze violation (we simply
+  // don't know where they're looking).
+  const gazeKnown   = faceCount > 0;
+  const gazeOk      = gazeKnown && !gazeAway;
   const audioOk     = !voiceDetected;
   const multiOk     = !multipleSpeakers;
 
@@ -126,7 +131,7 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
             !cameraReady       ? "Camera offline"
             : faceMulti        ? `${faceCount} faces detected`
             : faceWarn         ? "No face detected"
-            : "Face verified"
+            : "Face detected"
           }
           ok={faceOk}
           warn={faceWarn}
@@ -134,10 +139,10 @@ export default function ProctorPanel({ proctoringState, audioState, videoRef }: 
         />
         <StatusRow
           icon={Eye}
-          label={gazeOk ? "Looking at screen" : `Gaze: ${gazeDirection}`}
+          label={!gazeKnown ? "Gaze unknown" : gazeOk ? "Looking at screen" : `Gaze: ${gazeDirection}`}
           ok={gazeOk}
-          warn={gazeAway}
-          detail={gazeAway ? "Please keep eyes on the exam" : undefined}
+          warn={!gazeKnown || gazeAway}
+          detail={gazeKnown && gazeAway ? "Please keep eyes on the exam" : undefined}
         />
         <StatusRow
           icon={Mic}

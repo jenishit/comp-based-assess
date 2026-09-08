@@ -72,7 +72,7 @@ export default function DashboardLayout({
             <GraduationCap size={18} className="text-white" aria-hidden="true" />
           </div>
           <span className="font-display text-lg text-white tracking-tight">
-            PracticeHub
+            EduQuest
           </span>
           <span className="ml-auto text-[10px] font-medium text-sand uppercase tracking-wider border border-sand/30 rounded px-1.5 py-0.5">
             {isTeacher ? "Teacher" : "Student"}

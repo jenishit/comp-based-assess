@@ -1,6 +1,15 @@
 import type { NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
+// This file's fetches run server-side (authorize() during login, and the
+// jwt callback's refresh) — NEXT_PUBLIC_BASE_URL is the browser-facing
+// origin and isn't reachable from inside the web container itself (see
+// docker-compose.yml's comments on BACKEND_INTERNAL_URL vs
+// NEXT_PUBLIC_BASE_URL). Same fallback chain app/api/backend/[...path]/route.ts
+// already uses for the same reason.
+const BACKEND_BASE =
+  process.env.BACKEND_INTERNAL_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:8001/api/v1'
+
 export const authConfig: NextAuthConfig = {
   trustHost: true, // Required if using environment variables for NEXTAUTH_URL behind a proxy
 
@@ -21,7 +30,7 @@ export const authConfig: NextAuthConfig = {
         const { email, password } = credentials as { email: string; password: string }
 
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
+          const response = await fetch(`${BACKEND_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({email, password}),
@@ -87,7 +96,7 @@ export const authConfig: NextAuthConfig = {
       }
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/refresh`, {
+        const res = await fetch(`${BACKEND_BASE}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: token.refreshToken }),
@@ -135,7 +144,7 @@ export const authConfig: NextAuthConfig = {
       const token = 'token' in message ? message.token : null
       if (!token?.refreshToken) return
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/logout`, {
+        await fetch(`${BACKEND_BASE}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

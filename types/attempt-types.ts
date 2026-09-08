@@ -54,6 +54,7 @@ export interface AttemptDetail {
   answers: AnswerDetail[];
   proctoring_events: ProctoringEventDetail[];
   ml_reviews: MLReview[];
+  bloom_level_performance: Record<string, number>;
 }
 
 export interface AttemptResultAnswer {
@@ -88,6 +89,7 @@ export interface AttemptResult {
   total_marks: number;
   answers: AttemptResultAnswer[];
   proctoring_events: AttemptResultProctoringEvent[];
+  bloom_level_performance: Record<string, number>;
 }
 
 export interface AnswerReview {

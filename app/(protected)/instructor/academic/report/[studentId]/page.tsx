@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { annualReportGetService } from "@/services/academic-service";
 import type { AnnualReport } from "@/types/academic-types";
 import { Loader2, TrendingDown, BookOpen } from "lucide-react";
+import BloomRadarChart from "@/components/dashboard/BloomRadarChart";
 
 function AnnualReportContent() {
   const params = useParams();
@@ -99,17 +100,7 @@ function AnnualReportContent() {
           {report.bloom_level_performance && Object.keys(report.bloom_level_performance).length > 0 && (
             <div className="bg-card rounded-xl border border-sand-border p-5">
               <h2 className="text-sm font-semibold text-espresso mb-3">Bloom&apos;s level performance</h2>
-              <div className="space-y-2">
-                {Object.entries(report.bloom_level_performance).map(([level, avg]) => (
-                  <div key={level} className="flex items-center gap-3">
-                    <span className="text-xs text-bark w-32 shrink-0 truncate capitalize">{level}</span>
-                    <div className="flex-1 h-2 rounded-full bg-sand-light overflow-hidden">
-                      <div className="h-full bg-sage" style={{ width: `${Math.min(100, avg)}%` }} />
-                    </div>
-                    <span className="text-xs font-medium text-espresso w-10 text-right">{avg}%</span>
-                  </div>
-                ))}
-              </div>
+              <BloomRadarChart data={report.bloom_level_performance} />
             </div>
           )}
 
